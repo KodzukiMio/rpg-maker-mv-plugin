@@ -398,9 +398,12 @@ KUR.prototype._getxy = {
     y: function (id) {
         return $gameMap.event(id).y;
     },
-    mapid: function (x, y) {
+    MapEventId: function (x, y) {
         return $gameMap.eventIdXy(x, y);
     }
+};
+KUR.prototype._SetEventPosition = function (id, x, y) {
+    $gameMap.event(id).setPosition(x, y);
 };
 KUR.prototype.STORE = [];
 //sleep(时间(毫秒),"执行代码块","参数名1,参数名2,...",[参数1,参数2])
@@ -571,7 +574,6 @@ $(document).keyup(function (event) {
 
 function szn_debug() {
     SDEBUG = true;
-    $gameParty.gainItem($dataItems[8], 1, );
     var vConsole = new VConsole() || {};
     /* console.log("SH()") */
     //$gameTemp.reserveCommonEvent(69);
@@ -587,6 +589,15 @@ function KUR_DEBUG() {
 KUR_DEBUG.prototype.initialize = function () {
 
 };
+KUR_DEBUG.prototype.ShowDebugWindow = function () {
+    SceneManager.push(Scene_Debug);
+}
+KUR_DEBUG.prototype._debug = function () {
+    szn_debug();
+}
+KUR_DEBUG.prototype._debug_show = function () {
+    $gameTemp.reserveCommonEvent(5);
+}
 KUR_DEBUG.prototype.Get_all_roles = function () {
     var num = $dataActors.length - 1;
     for (i = 0; i < num; ++i) {
