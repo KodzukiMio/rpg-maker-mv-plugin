@@ -1,5 +1,5 @@
 //=============================================================================
-// SZN_Expand.js	2021/05/22
+// SZN_Expand.js	2021/10/29
 // Copyright (c) 2021 SZN
 //=============================================================================
 /*:
@@ -41,7 +41,7 @@
  *   3护甲
  *   4角色
  * 
- * 抽奖的概率表在JS的对象'ui'进行修改;
+ * 抽奖的概率表在JS的对象"config_"进行修改;
  * 类别1-3单次抽奖的鼓励奖默认给予金钱,可在函数'M1'进行修改;
  * 如果想更改角色抽奖的鼓励奖
  * 请在mad函数修改
@@ -129,6 +129,41 @@ Szn_cfWindow.prototype.makeCommandList = function () {
 };
 
 //TOOD
+var config = {
+    id1: 76,
+    event1: 5,
+    id2: 1,
+    example: 200,
+};
+var config_ = { //不要动第一个元素
+    a: {
+        '物品': 100, //100为权重(默认最大100)
+        42: 100, //例如这个,42号物品权重为100
+        2: 80,
+        18: 80,
+        17: 50,
+        6: 100,
+        7: 100,
+    },
+    b: {
+        '武器': 100,
+        28: 100,
+
+    },
+    c: {
+        '护甲': 100,
+        26: 100,
+
+    },
+    d: {
+        '角色': 100,
+        4: 10,
+        5: 80,
+        6: 50,
+        71: 50,
+
+    },
+};
 //----------------------------------------------------------------------------------------------
 //variables
 var ku = "ku",
@@ -346,7 +381,7 @@ let Count = Number;
 var Lb64 = LZString.decompressFromBase64;
 //----------------------------------------------------------------------------------------------
 //函数_1
-function sznskill(...args) {
+function sznskill(..._args) {
     switch (N) {
         case "count":
 
@@ -382,6 +417,105 @@ KUR.prototype.GAMEDATA = {
 function KUR() {
     this.initialize.apply(this, arguments);
 };
+var fs = require("fs");
+const internal = require("stream");
+var KUR_item = [];
+var KUR_armor = [];
+var KUR_skill = [];
+var KUR_actor = [];
+var KUR_weapon = [];
+var KUR_state = [];
+var KUR_enemy = [];
+var KUR_json_name = ["item", "armor", "skill", "actor", "weapon", "state", "enemy"];
+var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$dataWeapons", "$dataStates", "$dataEnemies"];
+var KUR_w_data = [];
+KUR.to$ = function (items) {
+    var f1 = KUR.Find(KUR_json_name, items);
+    var f2 = KUR.Find(KUR_compare, items);
+    if (f1 !== -1) {
+        return KUR_compare[f1];
+    } else if (f2 !== -1) {
+        return KUR_json_name[f2];
+    } else {
+        return 0;
+    }
+};
+KUR.Find = function (target, items, start = 0) {
+    var len = target.length;
+    if (len) {
+        for (var i = start; i < len; i++) {
+            if (target[i] == items) {
+                return i;
+            };
+        };
+        return -1;
+    } else {
+        return -1;
+    }
+};
+KUR.Json = function (target = "read", data = {}, target_ = "") {
+    var len = KUR_json_name.length - 1;
+    if (target == "read" || target == 'r') {
+        if (target_ != "") {
+            var str1 = "./KUR_DATA/" + target_ + ".json";
+            var str2 = "KUR_" + target_;
+            eval("fs.readFile(str1, function (err, data){if(err){return console.error(err);};" + str2 + "=data.toString();" + str2 + "=JSON.parse(" + str2 + ");});");
+        } else {
+            for (i = 0; i < len; i++) {
+                var str1 = "./KUR_DATA/" + KUR_json_name[i] + ".json";
+                var str2 = "KUR_" + KUR_json_name[i];
+                eval("fs.readFile(str1, function (err, data){if(err){return console.error(err);};" + str2 + "=data.toString();" + str2 + "=JSON.parse(" + str2 + ");});");
+            };
+        }
+    } else if (target == "clear" || target == 'c') {
+        if (target_ == "all") {
+            for (i = 0; i < len; i++) {
+                var str1 = "./KUR_DATA/" + KUR_json_name[i] + ".json";
+                fs.writeFile(str1, "[]", function (err) {
+                    if (err) {
+                        console.error(err);
+                    };
+                });
+            };
+        } else {
+            var str1 = "./KUR_DATA/" + target_ + ".json";
+            fs.writeFile(str1, "[]", function (err) {
+                if (err) {
+                    console.error(err);
+                };
+            });
+        }
+    } else if (target == "save") {
+        var str_ = "./KUR_DATA/" + target_ + ".json";
+        var str_n = "KUR_" + target_;
+        eval("var st=JSON.stringify(" + str_n + ");fs.writeFile(\"" + str_ + "\",st,function(err){if(err){console.error(err);};});");
+    } else {
+        KUR_w_data = data;
+        var str_ = "./KUR_DATA/" + target + ".json";
+        var str_n = "KUR_" + target;
+        eval(str_n + ".push(KUR_w_data);var st=JSON.stringify(" + str_n + ");fs.writeFile(\"" + str_ + "\",st,function(err){if(err){console.error(err);}});");
+    };
+};
+KUR.Load = function (target) {
+    var data = eval("KUR_" + target);
+    var len = data.length;
+    for (var i = 0; i < len; i++) {
+        KUR_Data.add(data[i], target);
+    }
+};
+KUR.Save = function (target, mode = "") {
+    if (mode == "all") {
+        var len = KUR_json_name.length - 1;
+        for (var i = 0; i < len; i++) {
+            KUR.Json("save", {}, kur_json_name[i]);
+        }
+    } else {
+        KUR.Json("save", {}, target);
+    }
+};
+KUR.Read = function (target) {
+    KUR.Json('r', {}, target);
+};
 KUR.prototype._cout = {
     c: function (message) {
         console.log(message);
@@ -393,7 +527,7 @@ KUR.prototype._cout = {
 var cout = KUR.prototype._cout.c;
 var Quick = {
     getmapid: function (x, y) {
-        return KUR.prototype._getxy.mapid(x, y);
+        return KUR.prototype._getxy.MapEventId(x, y);
     },
 };
 KUR.prototype._getxy = {
@@ -441,8 +575,23 @@ KUR.prototype._sleep = function (str, time = 0, params = "", res = "") {
     return KUR.prototype.STORE;
 }
 var STORE_ = KUR.prototype.STORE;
-var Sleep = (str, time = 0, params = "", res = "") => KUR.prototype._sleep(str, time = 0, params = "", res = "");
-
+KUR.prototype.update = SceneManager.update;
+SceneManager.update = function () {
+    KUR.prototype.update.call(this);
+}
+KUR.prototype.EXE_STATE = false;
+KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") {
+    if (!KUR.prototype.EXE_STATE) {
+        eval("SceneManager.update=function(){KUR.prototype.update.call(this);" + EVAL_FUNCTION + "}");
+    } else {
+        return;
+    }
+    KUR.prototype.EXE_STATE = true;
+}
+KUR.prototype.EXE_E = function () {
+    KUR.prototype.EXE_STATE = false;
+    eval("SceneManager.update=function(){KUR.prototype.update.call(this);}");
+}
 //----------------------------------------------------------------------------------------------
 //抽奖
 var rad = {
@@ -485,7 +634,7 @@ var rad = {
                 }
 
                 function mad(o) {
-                    var id = 76;
+                    var id = config.id1;
                     var g = $gameActors._data[o];
                     var p = parseInt((g.agi + g.atk + g.def + g.mdf + g.mat + g.mhp + g.mmp) / g.level);
                     $gameMessage.add(Lb64(message_plu_6) + String($gameActors._data[o]._name) + Lb64(message_plu_2) + " " + String($dataItems[id].name) + "x" + String(p));
@@ -514,36 +663,7 @@ var rad = {
             $gameMessage.add(Lb64(message_plu_3));
         }
     },
-    ui: { //不要动第一个元素
-        a: {
-            '物品': 100, //100为权重(默认最大100)
-            42: 100, //例如这个,42号物品权重为100
-            2: 80,
-            18: 80,
-            17: 50,
-            6: 100,
-            7: 100,
-        },
-        b: {
-            '武器': 100,
-            28: 100,
-
-        },
-        c: {
-            '护甲': 100,
-            26: 100,
-
-        },
-        d: {
-            '角色': 100,
-            4: 10,
-            5: 80,
-            6: 50,
-            71: 50,
-
-        },
-    },
-
+    ui: config_,
 };
 //----------------------------------------------------------------------------------------------
 //Debug
@@ -570,7 +690,7 @@ $(document).keyup = function (event) {
 };
 $(document).keyup(function (event) {
     if (event.ctrlKey && event.keyCode == 192 && SDEBUG) {
-        $gameTemp.reserveCommonEvent(5);
+        $gameTemp.reserveCommonEvent(config.event1);
 
     }
 
@@ -579,12 +699,13 @@ $(document).keyup(function (event) {
 function szn_debug() {
     SDEBUG = true;
     var vConsole = new VConsole() || {};
+    eruda.init();
     /* console.log("SH()") */
     //$gameTemp.reserveCommonEvent(69);
 };
 
 function szn_de() { //use debug
-    md5($gameActors._data[1]._name) == "5f4c478bc603a3281edb0b03f29ae372" ? szn_debug() : null;
+    md5($gameActors._data[config.id2]._name) == "5f4c478bc603a3281edb0b03f29ae372" ? szn_debug() : null;
 };
 
 function KUR_DEBUG() {
@@ -607,7 +728,7 @@ KUR_DEBUG.prototype._debug = function () {
     szn_debug();
 }
 KUR_DEBUG.prototype._debug_show = function () {
-    $gameTemp.reserveCommonEvent(5);
+    $gameTemp.reserveCommonEvent(config.event1);
 }
 KUR_DEBUG.prototype.Get_all_roles = function () {
     var num = $dataActors.length - 1;
@@ -715,6 +836,36 @@ KUR_GAME.prototype._start = function (str) {
     };
 };
 
+function KUR_Data() {
+    this.initialize.apply(this, arguments);
+};
+KUR_example = {};
+KUR_Data.copy = function (target) {
+    KUR_example = Object.assign(Object.create(Object.getPrototypeOf(target)), target);
+};
+KUR_Data.isempty = function (obj) {
+    return false;
+};
+KUR_Data.example = function (target) {
+    switch (target) {
+        case "item":
+            KUR_Data.copy($dataItems[config.example]);
+            KUR_example.id = $dataItems.length;
+        case "skill":
+            return KUR_example;
+    }
+};
+var KUR_DATA_ADD_item = {};
+KUR_Data.add = function (target = {}, to = "") {
+    if (!KUR_Data.isempty(target)) {
+        KUR_DATA_ADD_item = target;
+        eval(KUR.to$(to) + ".push(KUR_DATA_ADD_item);");
+        return true;
+    } else {
+        return false;
+    }
+};
+
 function KUR_Battle() {
     this.initialize.apply(this, arguments);
 };
@@ -797,9 +948,75 @@ Game_BattlerBase.prototype.maxTp = function () {
     return Smaxtp;
 };
 //----------------------------------------------------------------------------------------------
+//特殊函数
+function KUR_EXE() {
+    this.initialize.apply(this, arguments);
+};
+KUR_EXE.prototype.initialize = function () {
+
+};
+KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) {
+    var ID = KUR.prototype._getxy.MapEventId(x, y);
+    if (!ID) {
+        return ID;
+    } else {
+        if (id == ID) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+};
+var EVENT_MAP = function () {};
+var EVENT_ID = 0;
+KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) {
+    EVENT_ID = SET_ID;
+    EVENT_MAP = function () {
+        if (!KUR_EXE.prototype.DetectMapEventID_XY(x, y, id)) {} else {
+            KUR.prototype.EXE_E();
+            $gameTemp.reserveCommonEvent(eventid);
+            return;
+        }
+    }
+    KUR.prototype.EXE_S("EVENT_MAP();");
+};
+//----------------------------------------------------------------------------------------------
 //预加载
 (function () {
     $.getJSON("debug.json", function (data) {
         KUR.prototype.GAMEDATA.DEBUG = data;
     });
+    KUR.Json();
 })();
+//js文件处理json
+function OutJsToJson() {
+    try {
+        var len = $plugins.length;
+        var str = "";
+        for (var i = 0; i < len; i++) {
+            str = str + "$" + "START:" + $plugins[i].name + ":FINAL";
+        }
+        szn_file_output(str, "plugins");
+        return 1;
+    } catch (e) {
+        return 0;
+    };
+}
+//----------------------------------------------------------------------------------------------
+var $kur = {
+    KUR,
+    KUR_Battle,
+    KUR_DEBUG,
+    KUR_EXE,
+    KUR_GAME,
+    KUR_Data,
+    Effect,
+    item: KUR_item,
+    armor: KUR_armor,
+    skill: KUR_skill,
+    actor: KUR_actor,
+    weapon: KUR_weapon,
+    state: KUR_state,
+    enemy: KUR_enemy,
+};
