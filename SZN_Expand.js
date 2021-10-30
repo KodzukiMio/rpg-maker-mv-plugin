@@ -5,20 +5,39 @@
 /*:
  * @plugindesc [v1.0] 拓展
  * @author SZN
- * @param Window width
+ * 
+ * @param Window width_test
  * @desc TEST
  * 默认值：200
  * @default 200
- * @param Window height
+ * 
+ * @param Window height_test
  * @desc TEST
  * 默认值:Graphics.height
  * @default Graphics.height
+ * 
  * @param MaxTp
  * @desc 默认TP最大值
  * 默认值：100
  * @default 100
+ * 
+ * @param Prize ID
+ * @desc 奖品ID
+ * 默认值：76
+ * @default 76
+ * 
+ * @param Universal template ID
+ * @desc 通用模板ID
+ * 默认值：200
+ * @default 200
+ * 
+ * @param Encouragement Award
+ * @desc 鼓励奖
+ * 默认值：$gameParty.gainGold(M);
+ * @default $gameParty.gainGold(M);
+ * 
  * @help 
- * ============================================================================
+ * ============================================================================      
  * Plugin Commands [如果不需要某些功能,请自行在插件注释掉]
  * ============================================================================
  * 需要lz-string.js
@@ -34,22 +53,18 @@
  *      id为状态ID
  * ----------------------------------------------------------------------------
  * 2.抽奖,
- * 脚本:rad.rad(n,m)   n类别,m次数
- * 
+ * 脚本:KUR_JS._Lottery(n, m);   //n类别,m次数
+ * 使用前请先修改右侧的Prize ID与Encouragement Award
  * n:1物品
  *   2武器
  *   3护甲
  *   4角色
  * 
- * 抽奖的概率表在JS的对象"config_"进行修改;
- * 类别1-3单次抽奖的鼓励奖默认给予金钱,可在函数'M1'进行修改;
- * 如果想更改角色抽奖的鼓励奖
- * 请在mad函数修改
- * function mad(o) {
- * p = 物品个数;
- * id = 物品ID;
- * ...};
- * 目前只支持4个概率表,如上类别.
+ * 使用方法:
+ * 使用var xxx = KUR_JS._CreateProbabilityTable();创建概率表
+ * 然后使用xxx.x[id] = number;来添加或修改概率
+ * 使用KUR_JS._LoadProbabilityTable(xxx);加载概率表,这里xxx必须是引用类型!!!
+ * 可以自行创建json来保存概率表或者之间在编辑器的脚本里设置
  * ----------------------------------------------------------------------------
  * 3.添加了角色能级(战斗力)在菜单栏
  * ----------------------------------------------------------------------------
@@ -65,17 +80,23 @@
  * 被技能施加的对象,如果有状态...则添加状态...
  * ----------------------------------------------------------------------------
  * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人
- * 修改KUR_Data.BasicConfig
- * 使用KUR_Data.Create_.xxxx();来创建
+ * 使用前请修改基本模板ID(Universal template ID):ID为数据库中对应ID的数据
+ * 使用var xxx = KUR_JS._CreateBasicDataTemplate(target);来创建基本模板
+ * target的值请使用KUR_JS._BasicName();来查询
+ * 然后修改xxx的属性值
+ * 最后使用KUR_JS._CreateData(xxx);来创建数据
+ * ----------------------------------------------------------------------------
+ * 8.其它
+ * 使用KUR_...来查看
  * ----------------------------------------------------------------------------*/
 var szn_n = new Array();
 var Imported = Imported || {};
 Imported.SZN_Expand = true;
 var szn = szn || {};
 var params = PluginManager.parameters("SZN_Expand");
-var szn_cf = Number(params["Window width"]) || 200;
+var szn_cf = Number(params["Window width_test"]) || 200;
 var Smaxtp = Number(params["MaxTp"]) || 100;
-var szn_cfu = params["Window height"];
+var szn_cfu = params["Window height_test"];
 var szn_inbattle = Game_Unit.prototype.initialize;
 var szn_plc = Game_Interpreter.prototype.pluginCommand;
 var szn_cf1 = szn_cf;
@@ -134,39 +155,59 @@ Szn_cfWindow.prototype.makeCommandList = function () {
 
 //TOOD
 var config = {
-    id1: 76,
-    event1: 5,
-    id2: 1,
-    example: 200,
+    id1: Number(params["Prize ID"]) || 76, //抽奖物品ID
+    event1: 5, //debug事件
+    id2: 1, //debug Name
+    example: Number(params["Universal template ID"]) || 200, //通用模板ID
+    M1: Number(params["Encouragement Award"]) || "$gameParty.gainGold(M);", //鼓励奖
 };
-var config_ = { //不要动第一个元素
+var config_ = { //默认概率表
     a: {
         '物品': 100, //100为权重(默认最大100)
-        42: 100, //例如这个,42号物品权重为100
-        2: 80,
-        18: 80,
-        17: 50,
-        6: 100,
-        7: 100,
+        //'42': 100, //例如这个,42号物品权重为100
     },
     b: {
         '武器': 100,
-        28: 100,
-
     },
     c: {
         '护甲': 100,
-        26: 100,
-
     },
     d: {
         '角色': 100,
-        4: 10,
-        5: 80,
-        6: 50,
-        71: 50,
-
     },
+};
+var _config = { //这个是模板,请不要动第一个元素.
+    a: {
+        '物品': 100,
+    },
+    b: {
+        '武器': 100,
+    },
+    c: {
+        '护甲': 100,
+    },
+    d: {
+        '角色': 100,
+    },
+};
+
+function KUR_JS() {
+    this.initialize.apply(this, arguments);
+};
+KUR_JS._Lottery = function (n, m) {
+    rad.rad(n, m);
+};
+KUR_JS._CreateProbabilityTable = function () { //创建慨率表
+    return KUR_JS.CreateObject(_config);
+};
+KUR_JS.CreateObject = function (target) {
+    return Object.assign(Object.create(Object.getPrototypeOf(target)), target);
+};
+KUR_JS._LoadProbabilityTable = function (target) { //这里target必须是引用类型!!!
+    config_ = target;
+};
+KUR_JS._BasicName = function () {
+    return KUR_json_name;
 };
 //----------------------------------------------------------------------------------------------
 //variables
@@ -376,7 +417,7 @@ function Base64() {
 //# sourceMappingURL=md5.min.js.map
 //----------------------------------------------------------------------------------------------
 //其它
-function axf(max, min) {
+function axf(max, min) { //随机数
     return Math.floor(Math.random() * (max - min)) + min
 }
 var szn_vul1 = szn_vul1 || parseInt(axf(10000000, 99999999));
@@ -404,7 +445,7 @@ function counts(n = 0) {
     return Count *= n
 }
 
-function to_number(str_array) {
+function to_number(str_array) { //字符串数组转换数字
     var len = str_array.length;
     var newarr = [];
     for (i = 0; i < len; i++) {
@@ -435,7 +476,7 @@ var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$
 var KUR_w_data = [];
 var KUR_json_member_length = [];
 
-KUR.to$ = function (items) {
+KUR.to$ = function (items) { //获取对应名称
     var f1 = KUR.Find(KUR_json_name, items);
     var f2 = KUR.Find(KUR_compare, items);
     if (f1 !== -1) {
@@ -446,7 +487,7 @@ KUR.to$ = function (items) {
         return 0;
     }
 };
-KUR.Find = function (target, items, start = 0) {
+KUR.Find = function (target, items, start = 0) { //查找
     var len = target.length;
     if (len) {
         for (var i = start; i < len; i++) {
@@ -471,7 +512,7 @@ KUR.Load_json_length = function () {
         KUR_json_member_length.push(KUR.GetLength(KUR_json_name[i]));
     };
 };
-
+//麻烦的JSON操作
 KUR.Json = function (target = "read", data = {}, target_ = "") {
     var len = KUR_json_name.length - 1;
     if (target == "read" || target == 'r') {
@@ -515,19 +556,19 @@ KUR.Json = function (target = "read", data = {}, target_ = "") {
         eval(str_n + ".push(KUR_w_data);var st=JSON.stringify(" + str_n + ");fs.writeFile(\"" + str_ + "\",st,function(err){if(err){console.error(err);}});");
     };
 };
-KUR.Load = function (target) {
+KUR.Load = function (target) { //加载json
     var data = eval("KUR_" + target);
     var len = data.length;
     for (var i = 0; i < len; i++) {
         KUR_Data.add(data[i], target);
     }
 };
-KUR.reload = function (target) {
+KUR.reload = function (target) { //重加载json到$data
     var tar = eval(KUR.to$(target));
     tar.length = KUR.GetStaticLength(target);
     KUR.Load(target);
 };
-KUR.Save = function (target, mode = "") {
+KUR.Save = function (target, mode = "") { //保存json
     if (mode == "all") {
         var len = KUR_json_name.length - 1;
         for (var i = 0; i < len; i++) {
@@ -537,7 +578,7 @@ KUR.Save = function (target, mode = "") {
         KUR.Json("save", {}, target);
     }
 };
-KUR.Read = function (target) {
+KUR.Read = function (target) { //读取json
     KUR.Json('r', {}, target);
 };
 KUR.prototype._cout = {
@@ -554,7 +595,7 @@ var Quick = {
         return KUR.prototype._getxy.MapEventId(x, y);
     },
 };
-KUR.prototype._getxy = {
+KUR.prototype._getxy = { //一些小功能
     x: function (id) {
         return $gameMap.event(id).x;
     },
@@ -565,7 +606,7 @@ KUR.prototype._getxy = {
         return $gameMap.eventIdXy(x, y);
     }
 };
-KUR.prototype._SetEventPosition = function (id, x, y) {
+KUR.prototype._SetEventPosition = function (id, x, y) { //设置事件位置
     $gameMap.event(id).setPosition(x, y);
 };
 KUR.prototype.STORE = [];
@@ -676,7 +717,7 @@ var rad = {
 
         function M1(M) {
             Ma += M;
-            $gameParty.gainGold(M);
+            eval(config.M1);
         }
 
         function mo(m, y) {
@@ -775,14 +816,14 @@ KUR_DEBUG.prototype.EVALCODE = function (id) {
 }
 //----------------------------------------------------------------------------------------------
 //战斗受到伤害前添加状态(在武器备注写: <SZN_Damage_State:状态ID> )
-function act_w(id) {
+function act_w(id) { //解析注释
     try {
         var q = Number($gameActors.actor(id).weapons(0)[0].metaArray.SZN_Damage_State[0]);
         $gameActors.actor(id).addState(q);
     } catch (err) {} finally {}
 }
 var SZN_Game_Battler_onDamage = Game_Battler.prototype.onDamage;
-Game_Battler.prototype.onDamage = function (value) {
+Game_Battler.prototype.onDamage = function (value) { //受到伤害时
     SZN_Game_Battler_onDamage.call(this, value);
     act_w(this._actorId);
     /*     this.chargeTpByDamage(value / this.mmp); */
@@ -791,18 +832,18 @@ Game_Battler.prototype.onDamage = function (value) {
 //战斗拓展
 var SKILL_ID = 1;
 var KUR_Game_Action_setEnemyAction = Game_Action.prototype.setEnemyAction;
-Game_Action.prototype.setEnemyAction = function (action) {
+Game_Action.prototype.setEnemyAction = function (action) { //设置敌人动作
     KUR_Game_Action_setEnemyAction.call(this, action);
     last_use_skill_id = action.skillId;
 };
 var KUR_Game_Enemy_selectAllActions = Game_Enemy.prototype.selectAllActions;
-Game_Enemy.prototype.selectAllActions = function (actionList) {
+Game_Enemy.prototype.selectAllActions = function (actionList) { //选择动作
     KUR_Game_Enemy_selectAllActions.call(this, actionList);
     this._use_skill_id = this._last_USE_Skill_Id;
     this._last_USE_Skill_Id = last_use_skill_id;
 };
 var KUR_Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
-Game_BattlerBase.prototype.paySkillCost = function (skill) {
+Game_BattlerBase.prototype.paySkillCost = function (skill) { //技能花费
     KUR_Game_BattlerBase_paySkillCost.call(this, skill);
     SKILL_ID = skill;
 };
@@ -810,20 +851,20 @@ Game_BattlerBase.prototype.paySkillCost = function (skill) {
 function KUR_GAME() {
     this.initialize.apply(this, arguments);
 };
-KUR_GAME.prototype._get_use_skill = function () {
+KUR_GAME.prototype._get_use_skill = function () { //获取当前使用技能ID
     return SKILL_ID;
 }
-KUR_GAME.prototype._target = function () {
+KUR_GAME.prototype._target = function () { //目标获取
     return BattleManager._targets;
 };
-KUR_GAME.prototype._last_Actor = function () {
+KUR_GAME.prototype._last_Actor = function () { //上一个角色
     return BattleManager.actor();
 };
-KUR_GAME.prototype._last_target = function () {
+KUR_GAME.prototype._last_target = function () { //上一个目标
     var Last = KUR_GAME.prototype._target();
     return Last[Last.length - 1];
 };
-KUR_GAME.prototype._last_Actor_Skill = function () {
+KUR_GAME.prototype._last_Actor_Skill = function () { //上次角色使用的技能ID
     var a;
     try {
         a = KUR_GAME.prototype._last_Actor().lastBattleSkill();
@@ -832,7 +873,7 @@ KUR_GAME.prototype._last_Actor_Skill = function () {
     }
     return a;
 };
-KUR_GAME.prototype._last_target_Skill_id = function () {
+KUR_GAME.prototype._last_target_Skill_id = function () { //上一个使用技能的目标ID
     try {
         var last = KUR_GAME.prototype._last_target();
         if (last.isActor()) {
@@ -843,7 +884,7 @@ KUR_GAME.prototype._last_target_Skill_id = function () {
     } catch (e) {};
 };
 var id = 0;
-KUR_GAME.prototype._start = function (str) {
+KUR_GAME.prototype._start = function (str) { //拓展集成
     switch (str) {
         case "onDamage":
             Effect.prototype.UseSkillonState(KUR_GAME.prototype._last_target());
@@ -863,19 +904,19 @@ function KUR_Data() {
     this.initialize.apply(this, arguments);
 };
 KUR_example = {};
-KUR_Data.copy = function (target) {
+KUR_Data.copy = function (target) { //复制对象
     KUR_example = Object.assign(Object.create(Object.getPrototypeOf(target)), target);
 };
 KUR_Data.isempty = function (obj) {
     return false;
 };
-KUR_Data.example = function (target) {
+KUR_Data.example = function (target) { //数据模板
     KUR_Data.copy(eval(KUR.to$(target) + "[config.example]"));
     KUR_example.id = KUR.GetStaticLength(target) + eval("KUR_" + target + ".length");
     return KUR_example;
 };
 var KUR_DATA_ADD_item = {};
-KUR_Data.add = function (target = {}, to = "") {
+KUR_Data.add = function (target = {}, to = "") { //向$dataxxx添加对象
     if (!KUR_Data.isempty(target)) {
         KUR_DATA_ADD_item = target;
         eval(KUR.to$(to) + ".push(KUR_DATA_ADD_item);");
@@ -884,15 +925,15 @@ KUR_Data.add = function (target = {}, to = "") {
         return false;
     }
 };
-KUR_Data.create = function (target) {
+KUR_Data.create = function (target) { //获取基本数据模板
     eval("KUR_" + target + ".push(KUR_Data.example(\"" + target + "\"));");
     return eval("KUR_" + target + "[KUR_" + target + ".length-1];");
 };
-KUR_Data.CreateBasic = function (target) {
+KUR_Data.CreateBasic = function (target) { //获取基本数据模板
     return KUR_Data.create(target);
 };
 KUR_Data.Create_ = {};
-KUR_Data.Reload_ = function (target, mode = "") {
+KUR_Data.Reload_ = function (target, mode = "") { //数据重新装载到$data
     if (mode == "") {
         KUR.reload(target);
     } else if (mode == "all") {
@@ -902,17 +943,56 @@ KUR_Data.Reload_ = function (target, mode = "") {
         };
     };
 };
-KUR_Data.Save_ = function (target, mode = "") {
+KUR_Data.Save_ = function (target, mode = "") { //数据保存
     KUR.Save(target, mode);
 };
-KUR_Data.BasicConfig = {};
-KUR_Data.Create_.skill = function () {};
-KUR_Data.Create_.actor = function () {};
-KUR_Data.Create_.armor = function () {};
-KUR_Data.Create_.weapon = function () {};
-KUR_Data.Create_.item = function () {};
-KUR_Data.Create_.enemy = function () {};
-KUR_Data.Create_.state = function () {};
+//各种数据创建
+KUR_Data.BasicConfig = { //基本模板
+    "item": {
+        _typename: "item",
+        data: null
+    },
+    "actor": {
+        _typename: "actor",
+        data: null
+    },
+    "skill": {
+        _typename: "skill",
+        data: null
+    },
+    "armor": {
+        _typename: "armor",
+        data: null
+    },
+    "weapon": {
+        _typename: "weapon",
+        data: null
+    },
+    "enemy": {
+        _typename: "enemy",
+        data: null
+    },
+    "state": {
+        _typename: "state",
+        data: null
+    },
+};
+KUR_Data.Create_.BasicTemplate = function (target) {
+    KUR_Data.BasicConfig[target].data = KUR_Data.example(target);
+    return KUR_JS.CreateObject(KUR_Data.BasicConfig[target]);
+};
+KUR_Data.CreateData = function (target) {
+    var types = target._typename;
+    eval("KUR_" + types + ".push(target.data);");
+    KUR_Data.Reload_(types);
+    KUR_Data.Save_(types); //如果想手动保存请删除这一行
+};
+KUR_JS._CreateData = function (target) {
+    KUR_Data.CreateData(target);
+};
+KUR_JS._CreateBasicDataTemplate = function (target) {
+    return KUR_Data.Create_.BasicTemplate(target);
+};
 
 function KUR_Battle() {
     this.initialize.apply(this, arguments);
@@ -984,7 +1064,7 @@ Window_Base.prototype.draw_nj = function (actor, x, y) {
 };
 //----------------------------------------------------------------------------------------------
 //等级位置优化
-Window_Base.prototype.drawActorLevel = function (actor, x, y) {
+Window_Base.prototype.drawActorLevel = function (actor, x, y) { //修改等级位置
     this.changeTextColor(this.systemColor());
     this.drawText(TextManager.levelA, x, y, 48);
     this.resetTextColor();
@@ -1003,7 +1083,7 @@ function KUR_EXE() {
 KUR_EXE.prototype.initialize = function () {
 
 };
-KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) {
+KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) { //检测位于(x,y)的事件ID
     var ID = KUR.prototype._getxy.MapEventId(x, y);
     if (!ID) {
         return ID;
@@ -1018,7 +1098,7 @@ KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) {
 };
 var EVENT_MAP = function () {};
 var EVENT_ID = 0;
-KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) {
+KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) { //事件移动检测
     EVENT_ID = SET_ID;
     EVENT_MAP = function () {
         if (!KUR_EXE.prototype.DetectMapEventID_XY(x, y, id)) {} else {
@@ -1035,7 +1115,7 @@ function GAME_DATA_LOAD() {
     KUR.Json();
     KUR.prototype._sleep("KUR.Load_json_length();", 1000);
     KUR.prototype._sleep("KUR_Data.Reload_(\"\",\"all\");", 1500);
-}
+};
 (function () {
     $.getJSON("debug.json", function (data) {
         KUR.prototype.GAMEDATA.DEBUG = data;
@@ -1057,7 +1137,7 @@ function OutJsToJson() {
     };
 };
 //----------------------------------------------------------------------------------------------
-var $kur = {
+var $kur = { //引用
     KUR,
     KUR_Battle,
     KUR_DEBUG,
@@ -1065,4 +1145,5 @@ var $kur = {
     KUR_GAME,
     KUR_Data,
     Effect,
+    KUR_JS,
 };
