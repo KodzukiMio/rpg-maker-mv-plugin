@@ -63,6 +63,10 @@
  *          <SZN_add_state:xx yy zz>
  * 里面的xx yy zz为状态ID
  * 被技能施加的对象,如果有状态...则添加状态...
+ * ----------------------------------------------------------------------------
+ * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人
+ * 修改KUR_Data.BasicConfig
+ * 使用KUR_Data.Create_.xxxx();来创建
  * ----------------------------------------------------------------------------*/
 var szn_n = new Array();
 var Imported = Imported || {};
@@ -371,7 +375,7 @@ function Base64() {
 }(this);
 //# sourceMappingURL=md5.min.js.map
 //----------------------------------------------------------------------------------------------
-//其它类
+//其它
 function axf(max, min) {
     return Math.floor(Math.random() * (max - min)) + min
 }
@@ -429,6 +433,8 @@ var KUR_enemy = [];
 var KUR_json_name = ["item", "armor", "skill", "actor", "weapon", "state", "enemy"];
 var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$dataWeapons", "$dataStates", "$dataEnemies"];
 var KUR_w_data = [];
+var KUR_json_member_length = [];
+
 KUR.to$ = function (items) {
     var f1 = KUR.Find(KUR_json_name, items);
     var f2 = KUR.Find(KUR_compare, items);
@@ -453,6 +459,19 @@ KUR.Find = function (target, items, start = 0) {
         return -1;
     }
 };
+KUR.GetLength = function (items) {
+    return eval(KUR.to$(items) + ".length;");
+};
+KUR.GetStaticLength = function (target) {
+    return KUR_json_member_length[KUR.Find(KUR_json_name, target)];
+};
+KUR.Load_json_length = function () {
+    var len = KUR_json_name.length;
+    for (var i = 0; i < len; i++) {
+        KUR_json_member_length.push(KUR.GetLength(KUR_json_name[i]));
+    };
+};
+
 KUR.Json = function (target = "read", data = {}, target_ = "") {
     var len = KUR_json_name.length - 1;
     if (target == "read" || target == 'r') {
@@ -502,6 +521,11 @@ KUR.Load = function (target) {
     for (var i = 0; i < len; i++) {
         KUR_Data.add(data[i], target);
     }
+};
+KUR.reload = function (target) {
+    var tar = eval(KUR.to$(target));
+    tar.length = KUR.GetStaticLength(target);
+    KUR.Load(target);
 };
 KUR.Save = function (target, mode = "") {
     if (mode == "all") {
@@ -699,7 +723,6 @@ $(document).keyup(function (event) {
 function szn_debug() {
     SDEBUG = true;
     var vConsole = new VConsole() || {};
-    eruda.init();
     /* console.log("SH()") */
     //$gameTemp.reserveCommonEvent(69);
 };
@@ -847,13 +870,9 @@ KUR_Data.isempty = function (obj) {
     return false;
 };
 KUR_Data.example = function (target) {
-    switch (target) {
-        case "item":
-            KUR_Data.copy($dataItems[config.example]);
-            KUR_example.id = $dataItems.length;
-        case "skill":
-            return KUR_example;
-    }
+    KUR_Data.copy(eval(KUR.to$(target) + "[config.example]"));
+    KUR_example.id = KUR.GetStaticLength(target) + eval("KUR_" + target + ".length");
+    return KUR_example;
 };
 var KUR_DATA_ADD_item = {};
 KUR_Data.add = function (target = {}, to = "") {
@@ -865,6 +884,35 @@ KUR_Data.add = function (target = {}, to = "") {
         return false;
     }
 };
+KUR_Data.create = function (target) {
+    eval("KUR_" + target + ".push(KUR_Data.example(\"" + target + "\"));");
+    return eval("KUR_" + target + "[KUR_" + target + ".length-1];");
+};
+KUR_Data.CreateBasic = function (target) {
+    return KUR_Data.create(target);
+};
+KUR_Data.Create_ = {};
+KUR_Data.Reload_ = function (target, mode = "") {
+    if (mode == "") {
+        KUR.reload(target);
+    } else if (mode == "all") {
+        var len = KUR_json_name.length;
+        for (var i = 0; i < len; i++) {
+            KUR.reload(KUR_json_name[i]);
+        };
+    };
+};
+KUR_Data.Save_ = function (target, mode = "") {
+    KUR.Save(target, mode);
+};
+KUR_Data.BasicConfig = {};
+KUR_Data.Create_.skill = function () {};
+KUR_Data.Create_.actor = function () {};
+KUR_Data.Create_.armor = function () {};
+KUR_Data.Create_.weapon = function () {};
+KUR_Data.Create_.item = function () {};
+KUR_Data.Create_.enemy = function () {};
+KUR_Data.Create_.state = function () {};
 
 function KUR_Battle() {
     this.initialize.apply(this, arguments);
@@ -983,11 +1031,16 @@ KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) {
 };
 //----------------------------------------------------------------------------------------------
 //预加载
+function GAME_DATA_LOAD() {
+    KUR.Json();
+    KUR.prototype._sleep("KUR.Load_json_length();", 1000);
+    KUR.prototype._sleep("KUR_Data.Reload_(\"\",\"all\");", 1500);
+}
 (function () {
     $.getJSON("debug.json", function (data) {
         KUR.prototype.GAMEDATA.DEBUG = data;
     });
-    KUR.Json();
+    GAME_DATA_LOAD();
 })();
 //js文件处理json
 function OutJsToJson() {
@@ -1002,7 +1055,7 @@ function OutJsToJson() {
     } catch (e) {
         return 0;
     };
-}
+};
 //----------------------------------------------------------------------------------------------
 var $kur = {
     KUR,
@@ -1012,11 +1065,4 @@ var $kur = {
     KUR_GAME,
     KUR_Data,
     Effect,
-    item: KUR_item,
-    armor: KUR_armor,
-    skill: KUR_skill,
-    actor: KUR_actor,
-    weapon: KUR_weapon,
-    state: KUR_state,
-    enemy: KUR_enemy,
 };
