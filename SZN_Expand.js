@@ -1,9 +1,9 @@
 //=============================================================================
-// SZN_Expand.js	2021/10/29
+// SZN_Expand.js	2021/11/07
 // Copyright (c) 2021 SZN
 //=============================================================================
 /*:
- * @plugindesc [v1.0] 拓展
+ * @plugindesc [v1.1] 拓展
  * @author SZN
  * 
  * @param Error
@@ -39,9 +39,15 @@
  * 
  * @param Debug_
  * @desc (此功能需要Jquery.js)
+ * (插件调试用)
  * 默认值：0
  * @default 0
  * 
+ * @param Time
+ * @desc (MOG_TimeSystem与-ShoraLighting兼容)
+ * 地图备注使用<NOLIGHT>关闭MOG的光照
+ * 默认值：0
+ * @default 0
  * @help 
  * ============================================================================      
  * Plugin Commands [如果不需要某些功能,请自行在插件注释掉]
@@ -134,6 +140,9 @@ var config = {
     Eadd: Number(params["Energy Level"]) || 0,
     debug: Number(params["Debug_"]) || 0,
     load_time: Number(params["LoadTime"]) || 1000,
+    time: Number(params["Time"]) || 0,
+    hours: 65,
+    time_stat: 0,
 };
 var config_ = { //默认概率表
     a: {
@@ -650,15 +659,64 @@ KUR.prototype._sleep = function (str, time = 0, params = "", res = "") {
     }
     return KUR.prototype.STORE;
 }
+
+function GameCommand(command, args) {
+    return Game_Interpreter.prototype.pluginCommand(command, args);
+};
 var STORE_ = KUR.prototype.STORE;
+//------------------------------
+//与MOG和shora light支持
+var TIME__ = [0, 1, 2, 21, 22, 23];
+var TIME__S = false;
+
+function TIME_(time) {
+    var len = TIME__.length;
+    for (var i = 0; i < len; i++) {
+        if (time == TIME__[i]) {
+            TIME__S = true;
+            return true;
+        };
+    }
+    TIME__S = false;
+    return false;
+}
+var t_h_ = 0;
+var KUR_TIME__ = DataManager.onLoad;
+DataManager.onLoad = function (object) {
+    KUR_TIME__.call(this, object);
+    if (object === $dataMap) {
+        try {
+            object.meta.NOLIGHT == true ? (config.time_stat = 1) : (config.time_stat = 0);
+        } catch (e) {};
+    };
+};
+var time_loadfirst = 150;
+
+function TIME() {
+    if (t_h_ == time_loadfirst && !$gameParty.inBattle()) {
+        var t_h = $gameVariables._data[config.hours];
+        if (config.time_stat) {
+            GameCommand("ambient", ["#232323", "200"]);
+        } else if (TIME_(t_h)) {
+            GameCommand("ambient", ["#232323", "200"]);
+        } else {
+            GameCommand("ambient", ["#FFFFFF", "100"]);
+        };
+        t_h_ = 0;
+    };
+    t_h_++;
+};
 KUR.prototype.update = SceneManager.update;
 SceneManager.update = function () {
     KUR.prototype.update.call(this);
+    if (config.time) {
+        TIME();
+    };
 }
 KUR.prototype.EXE_STATE = false;
 KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") {
     if (!KUR.prototype.EXE_STATE) {
-        eval("SceneManager.update=function(){KUR.prototype.update.call(this);" + EVAL_FUNCTION + "}");
+        eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config.time) {TIME();};" + EVAL_FUNCTION + "}");
     } else {
         return;
     }
@@ -666,7 +724,7 @@ KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") {
 }
 KUR.prototype.EXE_E = function () {
     KUR.prototype.EXE_STATE = false;
-    eval("SceneManager.update=function(){KUR.prototype.update.call(this);}");
+    eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config.time) {TIME();};}");
 }
 //----------------------------------------------------------------------------------------------
 //抽奖
