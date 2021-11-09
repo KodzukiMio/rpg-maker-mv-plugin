@@ -90,8 +90,8 @@
  * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人,敌群
  * 使用前请修改基本模板ID(Universal template ID):ID为数据库中对应ID的数据
  * (可以使用config.example=number;)来修改模板ID
- * (注意::本功能目前无法在运行在手机上,只适用于电脑>>
- * 或者你也可以修改KUR.JSON()->(加载数据用的,自行修改为从存档加载))
+ * (注意::本功能目前无法在运行在移动端上,只适用于桌面端>>
+ * 如果你想要运行在移动端,可以修改KUR.JSON()->(加载数据用的,自行修改为从存档加载))
  * 使用var xxx = KUR_JS._CreateBasicDataTemplate(target);来创建基本模板
  * target的值请使用KUR_JS._BasicName();来查询
  * 然后修改xxx的属性值
@@ -128,6 +128,14 @@ var Imported = Imported || {};
 Imported.SZN_Expand = true;
 var szn = szn || {};
 var params = PluginManager.parameters("SZN_Expand");
+
+function isMobile() {
+    if (window.navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i)) {
+        return true; // 移动端
+    } else {
+        return false; // PC端
+    }
+};
 //TOOD
 var config = {
     id1: Number(params["Prize ID"]) || 76, //抽奖物品ID
@@ -143,6 +151,7 @@ var config = {
     time: Number(params["Time"]) || 0,
     hours: 65,
     time_stat: 0,
+    ismobile: isMobile(),
 };
 var config_ = { //默认概率表
     a: {
@@ -1248,7 +1257,9 @@ var KUR_LOAD_ = SceneManager.onSceneStart;
 var time_load = 0;
 SceneManager.onSceneStart = function () {
     KUR_LOAD_.call(this);
-    START_LOAD();
+    if (!config.ismobile) {
+        START_LOAD();
+    };
     count_load++;
 };
 
