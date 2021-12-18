@@ -1,7 +1,5 @@
 #define ENABLE_SZN_ALL
-#include<SZN_DEF.H>
-#include <stdio.h>
-#include <stdlib.h>
+#include<SZN_MAI.H>
 #define MAX 1024
 using namespace std;
 void main_();
@@ -13,25 +11,25 @@ int main() {
 }
 void main_() {
 	KUR::kurzer ku;
-	cout << "Ê¹ÓÃËµÃ÷:\n[1]:¼ÓÔØJSONOUT.js\n[2]:µ÷ÓÃOutJsToJson();\n[3]:";
-	cout << "½«plugins.json·ÅÖÃÔÚ...\\jsÎÄ¼þ¼ÐÄÚ.\n";
-	string s = ku.getstr("\nÊäÈëindex.htmlÎÄ¼þËùÔÚÄ¿Â¼µØÖ·:");
+	cout << "ä½¿ç”¨è¯´æ˜Ž:\n[1]:åŠ è½½JSONOUT.js\n[2]:è°ƒç”¨OutJsToJson();\n[3]:";
+	cout << "å°†plugins.jsonæ”¾ç½®åœ¨...\\jsæ–‡ä»¶å¤¹å†….\n";
+	string s = ku.getstr("\nè¾“å…¥index.htmlæ–‡ä»¶æ‰€åœ¨ç›®å½•åœ°å€:");
 	auto s_ = s + "\\js\\plugins.json";
 	R(s_, s);
 }
 void R(const string res, const string res_) {
-	cout << "¶ÁÈ¡ÖÐ...\n";
-	auto str = KUR_FILE::KFILE::FileReadAsString(res);
+	cout << "è¯»å–ä¸­...\n";
+	auto str = KUR::KFILE::FileReadAsString(res);
 	string sub1 = "START:";
 	string sub2 = ":FINAL";
 	KUR::Kstring Ks = str.c_str();
 	auto val = KUR::Stack<int>::SubLineAsString(Ks, sub1, sub2);
-	cout << "Íê³É!\nÕýÔÚ¸´ÖÆÎÄ¼þ...";
+	cout << "å®Œæˆ!\næ­£åœ¨å¤åˆ¶æ–‡ä»¶...";
 	string s;
 	string address = res_ + "\\js\\plugins\\";
 	while (!val->isempty()) {
 		s << *val;
-		KUR_FILE::KFILE::FileCpoy(address + s + ".js", "out\\" + s + ".js");
+		KUR::KFILE::FileCpoy(address + s + ".js", "out\\" + s + ".js");
 	}
-	cout << "\nÍê³É!!\nÎÄ¼þÒÑ±£´æµ½" << "exeËùÔÚÄ¿Â¼ÏÂµÄoutÎÄ¼þ¼ÐÄÚ.\n";
+	cout << "\nå®Œæˆ!!\næ–‡ä»¶å·²ä¿å­˜åˆ°" << "exeæ‰€åœ¨ç›®å½•ä¸‹çš„outæ–‡ä»¶å¤¹å†….\n";
 };
