@@ -1,9 +1,9 @@
 //=============================================================================
-// SZN_Expand.js	2021/11/07
-// Copyright (c) 2021 SZN
+// SZN_Expand.js	2022/01/02
+// Copyright (c) 2022 SZN
 //=============================================================================
 /*:
- * @plugindesc [v1.1] 拓展
+ * @plugindesc [v1.2] 拓展
  * @author SZN
  * 
  * @param Error
@@ -20,6 +20,11 @@
  * @desc 奖品ID
  * 默认值：76
  * @default 76
+ * 
+ * @param Prize State
+ * @desc 中奖提示
+ * 默认值：1
+ * @default 1
  * 
  * @param Universal template ID
  * @desc 通用模板ID
@@ -120,7 +125,15 @@
  * 于是我获得了名为"ABCD"的新物品
  * (技能,物品,武器,角色,护甲,状态,敌人,敌群)同理
  * ----------------------------------------------------------------------------
- * 8.其它
+ * 8.技能色调
+ * 使用这个可以改变技能色调
+ * 角色或者敌人备注:
+ *      <KUR_SkillHue:ID,hue1,hue2>
+ *      ID为技能ID
+ *      hue1为技能对应动画的图像1色调
+ *      hhu2为技能对应动画的图像2色调
+ * ----------------------------------------------------------------------------
+ * END.其它
  * 使用KUR_...来查看
  * ----------------------------------------------------------------------------*/
 var szn_n = new Array();
@@ -152,6 +165,7 @@ var config = {
     hours: 65,
     time_stat: 0,
     ismobile: isMobile(),
+    lottery: Number(params["Prize State"]) || 0,
 };
 var config_ = { //默认概率表
     a: {
@@ -485,7 +499,10 @@ KUR.prototype.GAMEDATA = {
 function KUR() {
     this.initialize.apply(this, arguments);
 };
-var fs = require("fs");
+var fs;
+try {
+    fs = require("fs");
+} catch (e) {};
 //var fs = require("stream");
 var KUR_item = [];
 var KUR_armor = [];
@@ -801,9 +818,11 @@ var rad = {
         function mo(m, y) {
             for (i = 0; i < m; i++) {
                 q(y);
-            }
-            $gameMessage.add(Lb64(message_plu_4) + Ma + Lb64(message_plu_5));
-            $gameMessage.add(Lb64(message_plu_3));
+            };
+            if (config.lottery) {
+                $gameMessage.add(Lb64(message_plu_4) + Ma + Lb64(message_plu_5));
+                $gameMessage.add(Lb64(message_plu_3));
+            };
         }
     },
     ui: config_,
@@ -918,6 +937,43 @@ Game_Battler.prototype.onDamage = function (value) { //受到伤害时
 //----------------------------------------------------------------------------------------------
 //战斗拓展
 var SKILL_ID = 1;
+var THIS_PERSON = 0;
+var KUR_find = [];
+
+function CheckNote(tag) { //查看注释是否存在并储存
+    KUR_find = [];
+    try {
+        var per = THIS_PERSON.notetags();
+        var len = per.length;
+        for (var i = 0; i < len; i++) {
+            if (per[i].indexOf(tag) == -1) {
+                continue;
+            } else {
+                KUR_find.push(per[i]);
+            };
+        };
+        return KUR_find.length;
+    } catch (error) {
+        return 0;
+    };
+};
+var KUR_Sprite_Animation_setup = Sprite_Animation.prototype.setup;
+Sprite_Animation.prototype.setup = function (target, animation, mirror, delay) {
+    if (CheckNote("KUR_SkillHue")) { //技能ID色调
+        var kf;
+        for (var i = 0; i < KUR_find.length; i++) {
+            kf = KUR_find[i].split(',');
+            if (Number(kf[0].split(':')[1]) == SKILL_ID.id) {
+                animation.animation1Hue = Number(kf[1]);
+                animation.animation2Hue = Number(kf[2].substring(0, kf[2].length - 1));
+                break;
+            } else {
+                continue;
+            };
+        };
+    };
+    KUR_Sprite_Animation_setup.call(this, target, animation, mirror, delay);
+};
 var KUR_Game_Action_setEnemyAction = Game_Action.prototype.setEnemyAction;
 Game_Action.prototype.setEnemyAction = function (action) { //设置敌人动作
     KUR_Game_Action_setEnemyAction.call(this, action);
@@ -931,6 +987,7 @@ Game_Enemy.prototype.selectAllActions = function (actionList) { //选择动作
 };
 var KUR_Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
 Game_BattlerBase.prototype.paySkillCost = function (skill) { //技能花费
+    THIS_PERSON = this;
     KUR_Game_BattlerBase_paySkillCost.call(this, skill);
     SKILL_ID = skill;
 };
@@ -1100,7 +1157,7 @@ KUR_Battle.prototype._onDamage_addState = function (id) {
 function Effect() {
     this.initialize.apply(this, arguments);
 };
-Effect.prototype.UseSkillonState = function (target) {
+Effect.prototype.UseSkillonState = function (target) { //技能状态
     var skill_id = KUR_GAME.prototype._get_use_skill().id; //TOOD
     if (skill_id == 0) {
         return;
@@ -1152,7 +1209,7 @@ if (config.Eadd) {
     };
 }
 //----------------------------------------------------------------------------------------------
-//等级位置优化
+//(可删除)等级位置优化
 Window_Base.prototype.drawActorLevel = function (actor, x, y) { //修改等级位置
     this.changeTextColor(this.systemColor());
     this.drawText(TextManager.levelA, x, y, 48);
@@ -1200,7 +1257,7 @@ KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) { //事件�
 };
 var ERROR_MESSAGE = 0;
 
-function CheckFile(file) {
+function CheckFile(file) { //文件检查
     var BOOL;
     fs.access("./KUR_DATA/" + file + ".json", fs.constants.F_OK, (err) => {
         console.log(`${file} ${err ? (BOOL=false) : (BOOL=true)}`);
@@ -1219,7 +1276,7 @@ function CheckFile(file) {
 
 };
 
-function FileCheck() {
+function FileCheck() { //文件检查
     fs.mkdir("KUR_DATA");
     var len = KUR_json_name.length;
     for (var i = 0; i < len; i++) {
@@ -1231,7 +1288,7 @@ function FileCheck() {
 var count_load = 0;
 
 
-function GAME_DATA_LOAD() {
+function GAME_DATA_LOAD() { //数据加载
     FileCheck();
     KUR.Json();
     KUR.Load_json_length();
@@ -1247,11 +1304,13 @@ function GAME_DATA_LOAD() {
     } catch (e) {};
 }());
 
-function START_LOAD() {
+function START_LOAD() { //开始加载JSON
     if (!count_load) {
         GAME_DATA_LOAD();
     }
     KUR_Data.Reload_("", "all");
+    //KUR.prototype._sleep(2000,"KUR_Data.Reload_(\"\", \"all\");");
+
 };
 var KUR_LOAD_ = SceneManager.onSceneStart;
 var time_load = 0;
