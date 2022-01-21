@@ -1317,7 +1317,7 @@ function START_LOAD() { //开始加载JSON
     if (!count_load) {
         GAME_DATA_LOAD();
     }
-    KUR.prototype._sleep(2000, "KUR_Data.Reload_(\"\", \"all\");");
+    KUR.prototype._sleep(config.LOAD_TIME, "KUR_Data.Reload_(\"\", \"all\");");
 
 };
 var KUR_LOAD_ = SceneManager.onSceneStart;
