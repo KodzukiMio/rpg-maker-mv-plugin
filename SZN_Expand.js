@@ -53,6 +53,11 @@
  * 地图备注使用<NOLIGHT>关闭MOG的光照
  * 默认值：0
  * @default 0
+ * 
+ * @param LOADTIME
+ * @desc (如果出现recipeItem报错,根据需求适当增加 加载时间)
+ * 默认值：2000
+ * @default 2000
  * @help 
  * ============================================================================      
  * Plugin Commands [如果不需要某些功能,请自行在插件注释掉]
@@ -166,6 +171,7 @@ var config = {
     time_stat: 0,
     ismobile: isMobile(),
     lottery: Number(params["Prize State"]) || 0,
+    LOAD_TIME: Number(params["LOADTIME"]) || 2000,
 };
 var config_ = { //默认概率表
     a: {
@@ -713,24 +719,27 @@ DataManager.onLoad = function (object) {
     if (object === $dataMap) {
         try {
             object.meta.NOLIGHT == true ? (config.time_stat = 1) : (config.time_stat = 0);
+            KUR_Data.Reload_("", "all");
         } catch (e) {};
     };
 };
 var time_loadfirst = 150;
 
 function TIME() {
-    if (t_h_ == time_loadfirst && !$gameParty.inBattle()) {
-        var t_h = $gameVariables._data[config.hours];
-        if (config.time_stat) {
-            GameCommand("ambient", ["#232323", "200"]);
-        } else if (TIME_(t_h)) {
-            GameCommand("ambient", ["#232323", "200"]);
-        } else {
-            GameCommand("ambient", ["#FFFFFF", "100"]);
+    try {
+        if (t_h_ == time_loadfirst && !$gameParty.inBattle()) {
+            var t_h = $gameVariables._data[config.hours];
+            if (config.time_stat) {
+                GameCommand("ambient", ["#232323", "200"]);
+            } else if (TIME_(t_h)) {
+                GameCommand("ambient", ["#232323", "200"]);
+            } else {
+                GameCommand("ambient", ["#FFFFFF", "100"]);
+            };
+            t_h_ = 0;
         };
-        t_h_ = 0;
-    };
-    t_h_++;
+        t_h_++;
+    } catch (e) {};
 };
 KUR.prototype.update = SceneManager.update;
 SceneManager.update = function () {
@@ -1308,8 +1317,7 @@ function START_LOAD() { //开始加载JSON
     if (!count_load) {
         GAME_DATA_LOAD();
     }
-    KUR_Data.Reload_("", "all");
-    //KUR.prototype._sleep(2000,"KUR_Data.Reload_(\"\", \"all\");");
+    KUR.prototype._sleep(2000, "KUR_Data.Reload_(\"\", \"all\");");
 
 };
 var KUR_LOAD_ = SceneManager.onSceneStart;
