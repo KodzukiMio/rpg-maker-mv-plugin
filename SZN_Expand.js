@@ -1392,9 +1392,7 @@ function ReadLength() {
         var item = _databaseFiles[i];
         try {
             fs.readFile('data/' + item.src, function (err, data) {
-                var f = data.toString();
-                f = JSON.parse(f);
-                datalength.push(f.length);
+                datalength.push(data.toString()).length);
             });
         } catch (e) {};
     };
