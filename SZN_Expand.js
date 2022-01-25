@@ -1388,14 +1388,11 @@ var _databaseFiles = [{
 var datalength = [];
 
 function ReadLength() {
-    for (var i = 0; i < _databaseFiles.length; i++) {
-        var item = _databaseFiles[i];
-        try {
-            fs.readFile('data/' + item.src, function (err, data) {
-                datalength.push(data.toString()).length);
-            });
-        } catch (e) {};
-    };
+    try {
+        for (var i = 0; i < _databaseFiles.length; i++) {
+            datalength.push(JSON.parse(fs.readFileSync(_databaseFiles[i].src).toString()).length);
+        };
+    } catch (error) {};
 };
 (function () {
     try {
