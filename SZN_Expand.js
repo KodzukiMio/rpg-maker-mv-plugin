@@ -3,7 +3,7 @@
 // Copyright (c) 2022 SZN
 //=============================================================================
 /*:
- * @plugindesc [v1.2] 拓展
+ * @plugindesc [v1.3] 拓展
  * @author SZN
  * 
  * @param Error
@@ -55,7 +55,7 @@
  * @default 0
  * 
  * @param LOADTIME
- * @desc (如果出现recipeItem报错,根据需求适当增加 加载时间)
+ * @desc (如果出现recipeItem报错,根据需求适当增加 加载时间(ms))
  * 默认值：2000
  * @default 2000
  * @help 
@@ -98,6 +98,10 @@
  * 被技能施加的对象,如果有状态...则添加状态...
  * ----------------------------------------------------------------------------
  * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人,敌群
+ * 
+ * 注意!!!:每次启用新插件时必须清空KUR_DATA文件夹
+ * 或者使用 KUR.Json("c",{},"all"); 来清空
+ * 
  * 使用前请修改基本模板ID(Universal template ID):ID为数据库中对应ID的数据
  * (可以使用config.example=number;)来修改模板ID
  * (注意::本功能目前无法在运行在移动端上,只适用于桌面端>>
@@ -518,8 +522,9 @@ var KUR_weapon = [];
 var KUR_state = [];
 var KUR_enemy = [];
 var KUR_troop = [];
-var KUR_json_name = ["item", "armor", "skill", "actor", "weapon", "state", "enemy", "troop"];
-var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$dataWeapons", "$dataStates", "$dataEnemies", "$dataTroops"];
+var KUR_class = [];
+var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$dataWeapons", "$dataStates", "$dataEnemies", "$dataTroops", "$dataClasses"];
+var KUR_json_name = ["item", "armor", "skill", "actor", "weapon", "state", "enemy", "troop", "class"];
 var KUR_w_data = [];
 var KUR_json_member_length = [];
 
@@ -554,10 +559,11 @@ KUR.GetStaticLength = function (target) {
     return KUR_json_member_length[KUR.Find(KUR_json_name, target)];
 };
 KUR.Load_json_length = function () {
-    var len = KUR_json_name.length;
-    for (var i = 0; i < len; i++) {
-        KUR_json_member_length.push(KUR.GetLength(KUR_json_name[i]));
-    };
+    // var len = KUR_json_name.length;
+    // for (var i = 0; i < len; i++) {
+    //     KUR_json_member_length.push(KUR.GetLength(KUR_json_name[i]));
+    // };
+    KUR_json_member_length = datalength;
     return true;
 };
 //麻烦的JSON操作
@@ -615,7 +621,7 @@ var KUR_load_count = 0;
 KUR.reload = function (target) { //重加载json到$data
     var tar = eval(KUR.to$(target));
     if (tar) {
-        tar.length = KUR.GetStaticLength(target);
+        //tar.length = KUR.GetStaticLength(target);
         KUR.Load(target);
         KUR_load_count++;
     }
@@ -644,7 +650,7 @@ KUR.prototype._cout = {
 var cout = KUR.prototype._cout.c;
 var Quick = {
     getmapid: function (x, y) {
-        return KUR.prototype._getxy.MapEventId(x, y);
+        return KUR.prototype._getxy.MapEvent(x, y);
     },
 };
 KUR.prototype._getxy = { //一些小功能
@@ -713,13 +719,13 @@ function TIME_(time) {
     return false;
 }
 var t_h_ = 0;
+var MapID = 0;
 var KUR_TIME__ = DataManager.onLoad;
 DataManager.onLoad = function (object) {
     KUR_TIME__.call(this, object);
     if (object === $dataMap) {
         try {
             object.meta.NOLIGHT == true ? (config.time_stat = 1) : (config.time_stat = 0);
-            KUR_Data.Reload_("", "all");
         } catch (e) {};
     };
 };
@@ -1072,7 +1078,7 @@ var KUR_DATA_ADD_item = {};
 KUR_Data.add = function (target = {}, to = "") { //向$dataxxx添加对象
     if (!KUR_Data.isempty(target)) {
         KUR_DATA_ADD_item = target;
-        eval(KUR.to$(to) + ".push(KUR_DATA_ADD_item);");
+        eval(KUR.to$(to) + '[' + target.id + ']' + "=KUR_DATA_ADD_item;");
         return true;
     } else {
         return false;
@@ -1127,6 +1133,10 @@ KUR_Data.BasicConfig = { //基本模板
     },
     "state": {
         _typename: "state",
+        data: null
+    },
+    "class": {
+        _typename: "class",
         data: null
     },
 };
@@ -1299,19 +1309,13 @@ var count_load = 0;
 
 function GAME_DATA_LOAD() { //数据加载
     FileCheck();
+    ReadLength()
     KUR.Json();
     KUR.Load_json_length();
     if (ERROR_MESSAGE) {
         return GAME_DATA_LOAD();
     };
 };
-(function () {
-    try {
-        $.getJSON("debug.json", function (data) {
-            KUR.prototype.GAMEDATA.DEBUG = data;
-        });
-    } catch (e) {};
-}());
 
 function START_LOAD() { //开始加载JSON
     if (!count_load) {
@@ -1344,6 +1348,64 @@ function OutJsToJson() {
         return 0;
     };
 };
+var _databaseFiles = [{
+        name: '$dataItems',
+        src: 'Items.json'
+    },
+    {
+        name: '$dataArmors',
+        src: 'Armors.json'
+    },
+    {
+        name: '$dataSkills',
+        src: 'Skills.json'
+    },
+    {
+        name: '$dataActors',
+        src: 'Actors.json'
+    },
+    {
+        name: '$dataWeapons',
+        src: 'Weapons.json'
+    },
+    {
+        name: '$dataStates',
+        src: 'States.json'
+    },
+    {
+        name: '$dataEnemies',
+        src: 'Enemies.json'
+    },
+    {
+        name: '$dataTroops',
+        src: 'Troops.json'
+    },
+    {
+        name: '$dataClasses',
+        src: 'Classes.json'
+    }
+];
+var datalength = [];
+
+function ReadLength() {
+    for (var i = 0; i < _databaseFiles.length; i++) {
+        var item = _databaseFiles[i];
+        try {
+            fs.readFile('data/' + item.src, function (err, data) {
+                var f = data.toString();
+                f = JSON.parse(f);
+                datalength.push(f.length);
+            });
+        } catch (e) {};
+    };
+};
+(function () {
+    try {
+        $.getJSON("debug.json", function (data) {
+            KUR.prototype.GAMEDATA.DEBUG = data;
+        });
+    } catch (e) {};
+}());
 //----------------------------------------------------------------------------------------------
 var $kur = { //引用
     KUR,
