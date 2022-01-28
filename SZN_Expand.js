@@ -1,5 +1,5 @@
 //=============================================================================
-// SZN_Expand.js	2022/01/02
+// SZN_Expand.js	2022/01/28
 // Copyright (c) 2022 SZN
 //=============================================================================
 /*:
@@ -60,17 +60,20 @@
  * @default 2000
  * @help 
  * ============================================================================      
- * Plugin Commands [如果不需要某些功能,请自行在插件注释掉]
+ * [如果不需要某些功能,请自行在插件注释掉]
  * ============================================================================
  * 需要LZstring.js(如果libs里没有)
  * ============================================================================
  * 1.战斗受到伤害时触发状态(被攻击后先附加状态再计算伤害)
+ * 
  * (注意:如果miss不会触发状态(就是触发onDamage函数时))
  * 
  *      武器备注<SZN_Damage_State:id>
  *      id为状态ID
+ * 
  * ----------------------------------------------------------------------------
- * 2.抽奖,
+ * 2.抽奖
+ * 
  * 脚本:KUR_JS._Lottery(n, m);   //n类别,m次数
  * 使用前请先修改右侧的Prize ID与Encouragement Award
  * n:1物品
@@ -83,6 +86,7 @@
  * 然后使用xxx.x[id] = number;来添加或修改概率
  * 使用KUR_JS._LoadProbabilityTable(xxx);加载概率表,这里xxx必须是引用类型!!!
  * 可以自行创建json来保存概率表或者之间在编辑器的脚本里设置
+ * 
  * ----------------------------------------------------------------------------
  * 3.添加了角色能级(战斗力)在菜单栏
  * ----------------------------------------------------------------------------
@@ -92,10 +96,12 @@
  * 优化了等级显示
  * ----------------------------------------------------------------------------
  * 6.IF效果,ADD效果
+ * 
  * 技能备注 <SZN_if_state:xx yy zz>
  *          <SZN_add_state:xx yy zz>
  * 里面的xx yy zz为状态ID
  * 被技能施加的对象,如果有状态...则添加状态...
+ * 
  * ----------------------------------------------------------------------------
  * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人,敌群
  * 
@@ -133,17 +139,25 @@
  * 我使用了 $gameParty.gainItem($dataItems[200],1,);(这里200是创建后自动生成的物品ID)
  * 于是我获得了名为"ABCD"的新物品
  * (技能,物品,武器,角色,护甲,状态,敌人,敌群)同理
+ * 
  * ----------------------------------------------------------------------------
- * 8.技能色调
+ * 8.技能&伤害 色调
+ * 
  * 使用这个可以改变技能色调
+ * 
  * 角色或者敌人备注:
  *      <KUR_SkillHue:ID,hue1,hue2>
+ *      <KUR_DamageHue:ID,hue>
  *      ID为技能ID
  *      hue1为技能对应动画的图像1色调
- *      hhu2为技能对应动画的图像2色调
- * ----------------------------------------------------------------------------
+ *      hue2为技能对应动画的图像2色调
+ *      hue为技能对应伤害图片的色调
+ * 
+ * ---------------------------------------------------------------------------- 
  * END.其它
+ * 
  * 使用KUR_...来查看
+ * 
  * ----------------------------------------------------------------------------*/
 var szn_n = new Array();
 var Imported = Imported || {};
@@ -648,6 +662,7 @@ KUR.prototype._cout = {
     }
 };
 var cout = KUR.prototype._cout.c;
+var eout = KUR.prototype._cout.e;
 var Quick = {
     getmapid: function (x, y) {
         return KUR.prototype._getxy.MapEvent(x, y);
@@ -1171,6 +1186,24 @@ KUR_Battle.prototype._onDamage_addState = function (id) {
         BattleManager._targets[i].addState(id);
     };
 };
+var KUR_Sprite_Damage_prototype_initialize = Sprite_Damage.prototype.initialize;
+Sprite_Damage.prototype.initialize = function () {
+    KUR_Sprite_Damage_prototype_initialize.call(this);
+    var k_hue = 0;
+    if (CheckNote("KUR_DamageHue")) {
+        var kf;
+        for (var i = 0; i < KUR_find.length; i++) {
+            kf = KUR_find[i].split(',');
+            if (Number(kf[0].split(':')[1]) == SKILL_ID.id) {
+                k_hue = Number(kf[1].substr(0, kf[1].length - 1));
+                break;
+            } else {
+                continue;
+            };
+        };
+    };
+    this._damageBitmap = ImageManager.loadSystem('Damage', k_hue);
+};
 //----------------------------------------------------------------------------------------------
 //效果
 function Effect() {
@@ -1350,41 +1383,42 @@ function OutJsToJson() {
 };
 var _databaseFiles = [{
         name: '$dataItems',
-        src: 'Items.json'
+        src: 'data/Items.json'
     },
     {
         name: '$dataArmors',
-        src: 'Armors.json'
+        src: 'data/Armors.json'
     },
     {
         name: '$dataSkills',
-        src: 'Skills.json'
+        src: 'data/Skills.json'
     },
     {
         name: '$dataActors',
-        src: 'Actors.json'
+        src: 'data/Actors.json'
     },
     {
         name: '$dataWeapons',
-        src: 'Weapons.json'
+        src: 'data/Weapons.json'
     },
     {
         name: '$dataStates',
-        src: 'States.json'
+        src: 'data/States.json'
     },
     {
         name: '$dataEnemies',
-        src: 'Enemies.json'
+        src: 'data/Enemies.json'
     },
     {
         name: '$dataTroops',
-        src: 'Troops.json'
+        src: 'data/Troops.json'
     },
     {
         name: '$dataClasses',
-        src: 'Classes.json'
+        src: 'data/Classes.json'
     }
 ];
+
 var datalength = [];
 
 function ReadLength() {
