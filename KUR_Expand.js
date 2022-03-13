@@ -199,7 +199,7 @@
  * 使用KUR_...来查看
  * 
  * ----------------------------------------------------------------------------*/
-var params = PluginManager.parameters("SZN_Expand");
+var params = PluginManager.parameters("KUR_Expand");
 
 function isMobile() {
     if (window.navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i)) {
@@ -220,7 +220,7 @@ var config = {
     Eadd: Number(params["Energy Level"]) || 0,
     debug: Number(params["Debug_"]) || 0,
     load_time: Number(params["LoadTime"]) || 1000,
-    time: Number(params["Time"]) || 0,
+    time: Number(params["Times"]),
     hours: 65,
     time_stat: 0,
     ismobile: isMobile(),
@@ -815,6 +815,7 @@ function TIME() {
             };
             TIME_FILTER();
             t_h_ = 0;
+            cout(66);
         };
         t_h_++;
     } catch (e) {};
