@@ -790,16 +790,19 @@ var time_loadfirst = 150;
 var _kur_time_filter = 0;
 
 function TIME_FILTER() {
-    var t_h = $gameVariables._data[config.hours];
-    if (TIME_(t_h)) {
-        if ($gameMap.enableFilter(0, 1)) {
-            Set_Filter(0, 0);
+    try {
+        var t_h = $gameVariables._data[config.hours];
+        if (TIME_(t_h)) {
+            if ($gameMap.enableFilter(0, 1)) {
+                Set_Filter(0, 0);
+            };
+        } else {
+            if (!$gameMap.enableFilter(0, 1)) {
+                Set_Filter(1, 0);
+            };
         };
-    } else {
-        if (!$gameMap.enableFilter(0, 1)) {
-            Set_Filter(1, 0);
-        };
-    };
+    } catch (e) {};
+
 };
 
 function TIME() {
@@ -815,7 +818,6 @@ function TIME() {
             };
             TIME_FILTER();
             t_h_ = 0;
-            cout(66);
         };
         t_h_++;
     } catch (e) {};
