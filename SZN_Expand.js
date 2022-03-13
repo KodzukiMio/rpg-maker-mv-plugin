@@ -1,9 +1,9 @@
-//=============================================================================
-// SZN_Expand.js	2022/01/28
+﻿//=============================================================================
+// SZN_Expand.js	2022/03/13
 // Copyright (c) 2022 SZN
 //=============================================================================
 /*:
- * @plugindesc [v1.3] 拓展
+ * @plugindesc [v1.4] 拓展
  * @author SZN
  * 
  * @param Error
@@ -58,6 +58,27 @@
  * @desc (如果出现recipeItem报错,根据需求适当增加 加载时间(ms))
  * 默认值：2000
  * @default 2000
+ * 
+ * @param WindowActorAttribute
+ * @desc 窗口名
+ * 默认值：额外数据
+ * @default 额外数据
+ * 
+ * @param WindowActorAttribute_max
+ * @desc 每列最大变量长度个数
+ * 默认值：9
+ * @default 9
+ * 
+ * @param WindowActorAttribute_x_offset
+ * @desc 变量名-偏移量
+ * 默认值：200
+ * @default 200
+ * 
+ * @param WindowActorAttribute_x_next_offset
+ * @desc 变量数值-偏移量
+ * 默认值：100
+ * @default 100
+ * 
  * @help 
  * ============================================================================      
  * [如果不需要某些功能,请自行在插件注释掉]
@@ -154,6 +175,25 @@
  *      hue为技能对应伤害图片的色调
  * 
  * ---------------------------------------------------------------------------- 
+ * 9.角色数据显示
+ * 
+ * 在角色备注使用以下格式来显示(注意:不允许空行!!!)
+ * <KUR_KAA>
+ * [name0,value0]
+ * [name1,value1]
+ * [name2,value2]
+ * ...
+ * </KUR_KAA>
+ * 
+ * 例如
+ * <KUR_KAA>
+ * ["金钱",$gameParty.gold()]
+ * ["a"+"b",7+8]
+ * ["232323","你好"]
+ * ...
+ * </KUR_KAA>
+ * 
+ * ---------------------------------------------------------------------------- 
  * END.其它
  * 
  * 使用KUR_...来查看
@@ -190,6 +230,11 @@ var config = {
     ismobile: isMobile(),
     lottery: Number(params["Prize State"]) || 0,
     LOAD_TIME: Number(params["LOADTIME"]) || 2000,
+    window_actor: 1,
+    window_actor_name: params["WindowActorAttribute"] || "额外属性",
+    window_actor_max: Number(params["WindowActorAttribute_max"]) || 9,
+    window_actor_x_offset: Number(params["WindowActorAttribute_x_offset"]),
+    window_actor_x_next_offset: Number(params["WindowActorAttribute_x_next_offset"]),
 };
 var config_ = { //默认概率表
     a: {
@@ -1335,6 +1380,180 @@ function FileCheck() { //文件检查
         CheckFile(KUR_json_name[i]);
     };
 };
+//----------------------------------------------------------------------------------------------
+//WINDOW
+var KUR_find_kaa;
+
+function CheckNote_KAA(tag) {
+    KUR_find_kaa = [];
+    try {
+        var per = KAA_THIS_ACTOR.notetags();
+        var len = per.length;
+        for (var i = 0; i < len; i++) {
+            if (per[i].indexOf(tag) == -1) {
+                continue;
+            } else {
+                KUR_find_kaa.push(i);
+            };
+        };
+        if (KUR_find_kaa.length == 0) {
+            return 0;
+        } else {
+            var l1 = KUR_find_kaa[0] + 1;
+            var l2 = KUR_find_kaa[1];
+            KUR_find_kaa = [];
+            for (; l1 < l2; l1++) {
+                KUR_find_kaa.push(per[l1]);
+            };
+            return 1;
+        };
+    } catch (error) {
+        return 0;
+    };
+
+};
+
+var KUR_Window_MenuCommand_addMainCommands = Window_MenuCommand.prototype.addMainCommands;
+Window_MenuCommand.prototype.addMainCommands = function () {
+    KUR_Window_MenuCommand_addMainCommands.call(this);
+    if (config.window_actor) {
+        this.addCommand(config.window_actor_name, "KUR_ACTOR_ATTRIBUTE", 1);
+    };
+};
+//------------------------------
+var _Scene_Menu_createCommandWindow = Scene_Menu.prototype.createCommandWindow;
+Scene_Menu.prototype.createCommandWindow = function () {
+    _Scene_Menu_createCommandWindow.call(this);
+    this._commandWindow.setHandler("KUR_ACTOR_ATTRIBUTE", this.actorAttribute.bind(this));
+};
+Scene_Menu.prototype.actorAttribute = function () {
+    this._statusWindow.setFormationMode(false);
+    this._statusWindow.selectLast();
+    this._statusWindow.activate();
+    this._statusWindow.setHandler('ok', this.kaa_ok.bind(this));
+    this._statusWindow.setHandler('cancel', this.kaa_cancel.bind(this));
+};
+Scene_Menu.prototype.kaa_ok = function () {
+    SceneManager.push(KUR_KAA);
+};
+Scene_Menu.prototype.kaa_cancel = function () {
+    this._statusWindow.deselect();
+    this._commandWindow.activate();
+};
+
+Window_MenuStatus.prototype.processOk = function () {
+    $gameParty.setMenuActor($gameParty.members()[this.index()]);
+    Window_Selectable.prototype.processOk.call(this);
+};
+//----------------------------------------------------------------
+function KUR_KAA() {
+    this.initialize.apply(this, arguments);
+}
+
+KUR_KAA.prototype = Object.create(Scene_MenuBase.prototype);
+KUR_KAA.prototype.constructor = KUR_KAA;
+
+KUR_KAA.prototype.initialize = function () {
+    Scene_MenuBase.prototype.initialize.call(this);
+};
+
+KUR_KAA.prototype.create = function () {
+    Scene_MenuBase.prototype.create.call(this);
+    this._statusWindow = new Window_kaa();
+    this._statusWindow.setHandler('cancel', this.popScene.bind(this));
+    this._statusWindow.setHandler('pagedown', this.nextActor.bind(this));
+    this._statusWindow.setHandler('pageup', this.previousActor.bind(this));
+    this._statusWindow.reserveFaceImages();
+    this.addWindow(this._statusWindow);
+};
+
+KUR_KAA.prototype.start = function () {
+    Scene_MenuBase.prototype.start.call(this);
+    this.refreshActor();
+};
+
+KUR_KAA.prototype.refreshActor = function () {
+    var actor = this.actor();
+    this._statusWindow.setActor(actor);
+};
+
+KUR_KAA.prototype.onActorChange = function () {
+    this.refreshActor();
+    this._statusWindow.activate();
+};
+//------------------------------
+var KAA_THIS_ACTOR;
+
+function Window_kaa() {
+    this.initialize.apply(this, arguments);
+}
+
+Window_kaa.prototype = Object.create(Window_Selectable.prototype);
+Window_kaa.prototype.constructor = Window_kaa;
+
+Window_kaa.prototype.initialize = function () {
+    var width = Graphics.boxWidth;
+    var height = Graphics.boxHeight;
+    Window_Selectable.prototype.initialize.call(this, 0, 0, width, height);
+    this._actor = null;
+    this.refresh();
+    this.activate();
+};
+
+Window_kaa.prototype.setActor = function (actor) {
+    if (this._actor !== actor) {
+        this._actor = actor;
+        KAA_THIS_ACTOR = this._actor;
+        this.refresh();
+    }
+};
+
+Window_kaa.prototype.refresh = function () {
+    this.contents.clear();
+    if (this._actor) {
+        var lineHeight = this.lineHeight();
+        this.drawBlock1(lineHeight * 0);
+        this.drawHorzLine(lineHeight * 1);
+        this.drawParameters(48, lineHeight * 2);
+    }
+};
+
+Window_kaa.prototype.drawBlock1 = function (y) {
+    this.drawActorName(this._actor, 6, y);
+    this.drawActorClass(this._actor, 192, y);
+    this.drawActorNickname(this._actor, 432, y);
+};
+
+Window_kaa.prototype.drawHorzLine = function (y) {
+    var lineY = y + this.lineHeight() / 2 - 1;
+    this.contents.paintOpacity = 48;
+    this.contents.fillRect(0, lineY, this.contentsWidth(), 2, this.lineColor());
+    this.contents.paintOpacity = 255;
+};
+
+Window_kaa.prototype.lineColor = function () {
+    return this.normalColor();
+};
+
+Window_kaa.prototype.drawParameters = function (x, y) {
+    if (CheckNote_KAA("KUR_KAA")) {
+        var lineHeight = this.lineHeight();
+        var kaa = KUR_find_kaa;
+        var lines = 1;
+        for (var i = 0; i < KUR_find_kaa.length; i++) {
+            if ((i % (config.window_actor_max * lines)) != i) {
+                lines++;
+            };
+            var y2 = y + lineHeight * (i % config.window_actor_max);
+            var kaa_ = eval(kaa[i]);
+            this.changeTextColor(this.systemColor());
+            this.drawText(kaa_[0], x + config.window_actor_x_offset * (lines - 1), y2, Graphics.boxWidth);
+            this.resetTextColor();
+            this.drawText(kaa_[1], x + config.window_actor_x_next_offset + (lines - 1) * config.window_actor_x_offset, y2, Graphics.boxWidth, 'left');
+        };
+    };
+};
+
 //----------------------------------------------------------------------------------------------
 //加载
 var count_load = 0;
