@@ -199,10 +199,6 @@
  * 使用KUR_...来查看
  * 
  * ----------------------------------------------------------------------------*/
-var szn_n = new Array();
-var Imported = Imported || {};
-Imported.SZN_Expand = true;
-var szn = szn || {};
 var params = PluginManager.parameters("SZN_Expand");
 
 function isMobile() {
@@ -235,6 +231,7 @@ var config = {
     window_actor_max: Number(params["WindowActorAttribute_max"]) || 9,
     window_actor_x_offset: Number(params["WindowActorAttribute_x_offset"]),
     window_actor_x_next_offset: Number(params["WindowActorAttribute_x_next_offset"]),
+    battle_light: 0,
 };
 var config_ = { //默认概率表
     a: {
@@ -790,6 +787,20 @@ DataManager.onLoad = function (object) {
     };
 };
 var time_loadfirst = 150;
+var _kur_time_filter = 0;
+
+function TIME_FILTER() {
+    var t_h = $gameVariables._data[config.hours];
+    if (TIME_(t_h)) {
+        if ($gameMap.enableFilter(0, 1)) {
+            Set_Filter(0, 0);
+        };
+    } else {
+        if (!$gameMap.enableFilter(0, 1)) {
+            Set_Filter(1, 0);
+        };
+    };
+};
 
 function TIME() {
     try {
@@ -802,6 +813,7 @@ function TIME() {
             } else {
                 GameCommand("ambient", ["#FFFFFF", "100"]);
             };
+            TIME_FILTER();
             t_h_ = 0;
         };
         t_h_++;
@@ -1014,6 +1026,18 @@ Game_Battler.prototype.onDamage = function (value) { //受到伤害时
 var SKILL_ID = 1;
 var THIS_PERSON = 0;
 var KUR_find = [];
+var KUR_BattleManager_endBattle = BattleManager.endBattle;
+var KUR_BattleManager_setup = BattleManager.setup;
+BattleManager.setup = function (troopId, canEscape, canLose) {
+    KUR_BattleManager_setup.call(this, troopId, canEscape, canLose);
+    if (config.battle_light) {
+        Try_Catch("Set_Filter(1,10);");
+    };
+};
+BattleManager.endBattle = function (result) {
+    KUR_BattleManager_endBattle.call(this, result);
+    Try_Catch("Set_Filter(0,10);");
+};
 
 function CheckNote(tag) { //查看注释是否存在并储存
     KUR_find = [];
@@ -1553,11 +1577,68 @@ Window_kaa.prototype.drawParameters = function (x, y) {
         };
     };
 };
+//------------------------------
+//TRAITS
+function GetTraits(ID) {
+    return $gameActors._data[ID].traitObjects()[1].traits;
+};
 
+function AddTraitToActor(ActorId, Code, DataId, Value) {
+    GetTraits(ActorId).push({
+        code: Code,
+        dataId: DataId,
+        value: Value
+    });
+};
+
+function LOAD_SAVE() {
+    try {
+        if (typeof ($gameSystem.KUR) == "undefined") {
+            $gameSystem.KUR = {};
+        };
+    } catch (e) {};
+};
+var __trait = {
+    code: 0,
+    dataId: 0,
+    value: 0
+};
+var _kur_trait = {
+    TRAIT_ELEMENT_RATE: 11,
+    TRAIT_DEBUFF_RATE: 12,
+    TRAIT_STATE_RATE: 13,
+    TRAIT_STATE_RESIST: 14,
+    TRAIT_PARAM: 21,
+    TRAIT_XPARAM: 22,
+    TRAIT_SPARAM: 23,
+    TRAIT_ATTACK_ELEMENT: 31,
+    TRAIT_ATTACK_STATE: 32,
+    TRAIT_ATTACK_SPEED: 33,
+    TRAIT_ATTACK_TIMES: 34,
+    TRAIT_STYPE_ADD: 41,
+    TRAIT_STYPE_SEAL: 42,
+    TRAIT_SKILL_ADD: 43,
+    TRAIT_SKILL_SEAL: 44,
+    TRAIT_EQUIP_WTYPE: 51,
+    TRAIT_EQUIP_ATYPE: 52,
+    TRAIT_EQUIP_LOCK: 53,
+    TRAIT_EQUIP_SEAL: 54,
+    TRAIT_SLOT_TYPE: 55,
+    TRAIT_ACTION_PLUS: 61,
+    TRAIT_SPECIAL_FLAG: 62,
+    TRAIT_COLLAPSE_TYPE: 63,
+    TRAIT_PARTY_ABILITY: 64,
+    FLAG_ID_AUTO_BATTLE: 0,
+    FLAG_ID_GUARD: 1,
+    FLAG_ID_SUBSTITUTE: 2,
+    FLAG_ID_PRESERVE_TP: 3,
+    ICON_BUFF_START: 32,
+    ICON_DEBUFF_START: 48,
+};
 //----------------------------------------------------------------------------------------------
 //加载
 var count_load = 0;
-
+var __COPY = KUR_JS.CreateObject;
 
 function GAME_DATA_LOAD() { //数据加载
     FileCheck();
@@ -1574,7 +1655,8 @@ function START_LOAD() { //开始加载JSON
         GAME_DATA_LOAD();
     }
     KUR.prototype._sleep(config.LOAD_TIME, "KUR_Data.Reload_(\"\", \"all\");");
-
+    LOAD_SAVE();
+    TIME_FILTER();
 };
 var KUR_LOAD_ = SceneManager.onSceneStart;
 var time_load = 0;
@@ -1664,4 +1746,69 @@ var $kur = { //引用
     KUR_Data,
     Effect,
     KUR_JS,
+};
+//https://rpg.blue/thread-488633-1-2.html
+var _kur_filter = [{
+    id: 0,
+    name: "godray" //often
+}, {
+    id: 1,
+    name: "ascii"
+}, {
+    id: 2,
+    name: "crosshatch"
+}, {
+    id: 3,
+    name: "dot"
+}, {
+    id: 4,
+    name: "emboss" //often
+}, {
+    id: 5,
+    name: "shockwave"
+}, {
+    id: 6,
+    name: "zoomblur"
+}, {
+    id: 7,
+    name: "noise"
+}, {
+    id: 8,
+    name: "blur"
+}, {
+    id: 9,
+    name: "oldfilm" //often
+}, {
+    id: 10,
+    name: "bloom" //often
+}, {
+    id: 11,
+    name: "godray-np"
+}, {
+    id: 12,
+    name: "reflection-w"
+}, {
+    id: 13,
+    name: "reflection-m"
+}, {
+    id: 14,
+    name: "crt"
+}];
+
+function Set_Filter(mode_, id, mode = 0) {
+    try {
+        if (mode_) {
+            $gameMap.createFilter(id, _kur_filter[id].name, mode);
+        } else {
+            $gameMap.eraseFilterAfterMove(id);
+        };
+    } catch (error) {};
+};
+
+function Try_Catch(CODE, CODE_CATCH) {
+    try {
+        eval(CODE);
+    } catch (error) {
+        eval(CODE_CATCH);
+    };
 };
