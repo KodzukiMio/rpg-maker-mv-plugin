@@ -1902,7 +1902,11 @@ function KUR_CODE(tag, tag1 = 0, target = 0) {
 
 function KUR_CODE_SKILL(target_) {
     var note = $dataSkills[KUR_GAME.prototype._get_use_skill().id].note;
-    note = note.substring(note.indexOf("<KUR_CODE>") + 10, note.indexOf("</KUR_CODE>"));
+    var start = note.indexOf("<KUR_CODE>");
+    if (start == -1) {
+        return;
+    };
+    note = note.substring(start + 10, note.indexOf("</KUR_CODE>"));
     try {
         eval("var target=target_;" + note);
     } catch (error) {
@@ -1950,3 +1954,13 @@ BattleManager.endTurn = function () {
     KUR_CODE_BattleManager_endTurn.call(this);
     KUR_CODE("KUR_CODE[0]");
 };
+// var KUR_ACTION_PER = 0;
+// var KUR_Game_ActionsetSubject = Game_Action.prototype.setSubject;
+// Game_Action.prototype.setSubject = function (subject) {
+//     KUR_Game_ActionsetSubject.call(this, subject);
+//     KUR_ACTION_PER = this;
+// };
+// function GetSkillUser() {
+//     cout(KUR_ACTION_PER.subject());
+// };
+//Game_BattlerBase.prototype.paySkillCost = function(skill)
