@@ -239,7 +239,7 @@ function isMobile() {
         return false; // PC端
     }
 };
-//TOOD
+//获取设置
 var config = {
     id1: Number(params["Prize ID"]) || 76, //抽奖物品ID
     event1: 5, //debug事件
@@ -294,7 +294,7 @@ var _config = { //这个是模板,请不要动第一个元素.
     },
 };
 
-function ERROR_THOROUGH(err) {
+function ERROR_THOROUGH(err) { //错误抛出
     if (config.error) {
         return console.error(err);
     } else {
@@ -305,19 +305,19 @@ function ERROR_THOROUGH(err) {
 function KUR_JS() {
     this.initialize.apply(this, arguments);
 };
-KUR_JS._Lottery = function (n, m) {
+KUR_JS._Lottery = function (n, m) { //抽奖
     rad.rad(n, m);
 };
 KUR_JS._CreateProbabilityTable = function () { //创建慨率表
     return KUR_JS.CreateObject(_config);
 };
-KUR_JS.CreateObject = function (target) {
+KUR_JS.CreateObject = function (target) { //对象复制
     return Object.assign(Object.create(Object.getPrototypeOf(target)), target);
 };
 KUR_JS._LoadProbabilityTable = function (target) { //这里target必须是引用类型!!!
     config_ = target;
 };
-KUR_JS._BasicName = function () {
+KUR_JS._BasicName = function () { //基础名
     return KUR_json_name;
 };
 var RESULT = [];
@@ -345,9 +345,6 @@ KUR_JS._Find = function (target, Attributes, value) { //查找符合target的Att
 }
 //----------------------------------------------------------------------------------------------
 //variables
-var ku = "ku",
-    Ma = 0,
-    dr = "";
 const message_plu_1 = "AQKAVMhLxob3KL4qgncgLgNoA9BccoJcjBOQQSQCKAw/wJ7qAOpoDwKANAG7qAbyoPOJBAuuMKBAMoBeAdgGMAZgGcApgBdgqYMXaA+6MB2/gXSpAIW45AvpqB8Q0BleujkR2vQUICGAEwvTZ7QHkagAqViO3YAYlFepztj/YRbEANjaGwIDzioCIOs567viqGtje3L5CNGZBMjTsgGA6TDRK6B7xLonAJsIA9gAOYuyAykaAAPougDKugEbpJWVCAgHl7IDOioC3qc0tQA=";
 const message_plu_2 = "k+6g1tQU6gNINvGGjKhcckAA";
 const message_plu_3 = "gbynbgzp+oIW6JZOiDKo79GAp1QMwGFBlQp+aGh3IAA=";
@@ -554,25 +551,13 @@ function Base64() {
 function axf(max, min) { //随机数
     return Math.floor(Math.random() * (max - min)) + min
 }
-var szn_vul1 = szn_vul1 || parseInt(axf(10000000, 99999999));
-var szn_vul2 = base.encode(String(szn_vul1));
+var szn_vul1 = szn_vul1 || parseInt(axf(10000000, 99999999)); //私用
+var szn_vul2 = base.encode(String(szn_vul1)); //私用
 let Count = Number;
 var Lb64 = LZString.decompressFromBase64;
 //----------------------------------------------------------------------------------------------
-//函数_1
-function sznskill(..._args) {
-    switch (N) {
-        case "count":
 
-        case "kill":
-            return 9999999999999999999999999999
-        case 51:
-            let q1 = Aatk >= 50 ? 800 + Aatk : Aatk;
-            return q1
-    }
-}
-
-function counts(n = 0) {
+function counts(n = 0) { //计数
     let count = Number;
     count > Number(num) ? count = 0 : count += Number(numadd);
     Count = count;
@@ -600,7 +585,7 @@ var fs;
 try {
     fs = require("fs");
 } catch (e) {};
-//var fs = require("stream");
+//加载数据使用
 var KUR_item = [];
 var KUR_armor = [];
 var KUR_skill = [];
@@ -639,21 +624,17 @@ KUR.Find = function (target, items, start = 0) { //查找
         return -1;
     }
 };
-KUR.GetLength = function (items) {
-    return eval(KUR.to$(items) + ".length;");
+KUR.GetLength = function (item) { //获取数据长度
+    return eval(KUR.to$(item) + ".length;");
 };
-KUR.GetStaticLength = function (target) {
+KUR.GetStaticLength = function (target) { //获取数据原本长度
     return KUR_json_member_length[KUR.Find(KUR_json_name, target)];
 };
-KUR.Load_json_length = function () {
-    // var len = KUR_json_name.length;
-    // for (var i = 0; i < len; i++) {
-    //     KUR_json_member_length.push(KUR.GetLength(KUR_json_name[i]));
-    // };
+KUR.Load_json_length = function () { //加载
     KUR_json_member_length = datalength;
     return true;
 };
-//麻烦的JSON操作
+//JSON操作
 KUR.Json = function (target = "read", data = {}, target_ = "") {
     var len = KUR_json_name.length - 1;
     if (target == "read" || target == 'r') {
@@ -708,7 +689,6 @@ var KUR_load_count = 0;
 KUR.reload = function (target) { //重加载json到$data
     var tar = eval(KUR.to$(target));
     if (tar) {
-        //tar.length = KUR.GetStaticLength(target);
         KUR.Load(target);
         KUR_load_count++;
     }
@@ -726,7 +706,7 @@ KUR.Save = function (target, mode = "") { //保存json
 KUR.Read = function (target) { //读取json
     KUR.Json('r', {}, target);
 };
-KUR.prototype._cout = {
+KUR.prototype._cout = { //偷懒用
     c: function (message) {
         console.log(message);
     },
@@ -786,7 +766,7 @@ KUR.prototype._sleep = function (str, time = 0, params = "", res = "") {
     return KUR.prototype.STORE;
 }
 
-function GameCommand(command, args) {
+function GameCommand(command, args) { //插件命令
     return Game_Interpreter.prototype.pluginCommand(command, args);
 };
 var STORE_ = KUR.prototype.STORE;
@@ -795,7 +775,7 @@ var STORE_ = KUR.prototype.STORE;
 var TIME__ = [0, 1, 2, 21, 22, 23];
 var TIME__S = false;
 
-function TIME_(time) {
+function TIME_(time) { //时间检测
     var len = TIME__.length;
     for (var i = 0; i < len; i++) {
         if (time == TIME__[i]) {
@@ -820,7 +800,7 @@ DataManager.onLoad = function (object) {
 var time_loadfirst = 150;
 var _kur_time_filter = 0;
 
-function TIME_FILTER() {
+function TIME_FILTER() { //滤镜设置
     try {
         var t_h = $gameVariables._data[config.hours];
         if (TIME_(t_h)) {
@@ -836,7 +816,7 @@ function TIME_FILTER() {
 
 };
 
-function TIME() {
+function TIME() { //时间控制
     try {
         if (t_h_ == time_loadfirst && !$gameParty.inBattle()) {
             var t_h = $gameVariables._data[config.hours];
@@ -861,7 +841,7 @@ SceneManager.update = function () {
     };
 }
 KUR.prototype.EXE_STATE = false;
-KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") {
+KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") { //偷梁换柱
     if (!KUR.prototype.EXE_STATE) {
         eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config.time) {TIME();};" + EVAL_FUNCTION + "}");
     } else {
@@ -949,7 +929,7 @@ var rad = {
     ui: config_,
 };
 //----------------------------------------------------------------------------------------------
-//(可以把$document)Debug
+//插件Debug
 var SDEBUG = false;
 if (config.debug) {
     try {
@@ -987,8 +967,6 @@ if (config.debug) {
 function szn_debug() {
     SDEBUG = true;
     var vConsole = new VConsole() || {};
-    /* console.log("SH()") */
-    //$gameTemp.reserveCommonEvent(69);
 };
 
 function szn_de() { //use debug
@@ -1053,7 +1031,6 @@ var SZN_Game_Battler_onDamage = Game_Battler.prototype.onDamage;
 Game_Battler.prototype.onDamage = function (value) { //受到伤害时
     SZN_Game_Battler_onDamage.call(this, value);
     act_w(this._actorId);
-    /*     this.chargeTpByDamage(value / this.mmp); */
 };
 //----------------------------------------------------------------------------------------------
 //战斗拓展
@@ -1290,7 +1267,7 @@ KUR_Battle.prototype._onDamage_addState = function (id) {
     };
 };
 var KUR_Sprite_Damage_prototype_initialize = Sprite_Damage.prototype.initialize;
-Sprite_Damage.prototype.initialize = function () {
+Sprite_Damage.prototype.initialize = function () { //伤害颜色
     KUR_Sprite_Damage_prototype_initialize.call(this);
     var k_hue = 0;
     if (CheckNote("KUR_DamageHue")) {
@@ -1443,7 +1420,7 @@ function FileCheck() { //文件检查
 //WINDOW
 var KUR_find_kaa;
 
-function CheckNote_KAA(tag) {
+function CheckNote_KAA(tag) { //检查note
     KUR_find_kaa = [];
     try {
         var per = KAA_THIS_ACTOR.notetags();
@@ -1473,7 +1450,7 @@ function CheckNote_KAA(tag) {
 };
 
 var KUR_Window_MenuCommand_addMainCommands = Window_MenuCommand.prototype.addMainCommands;
-Window_MenuCommand.prototype.addMainCommands = function () {
+Window_MenuCommand.prototype.addMainCommands = function () { //添加命令
     KUR_Window_MenuCommand_addMainCommands.call(this);
     if (config.window_actor) {
         this.addCommand(config.window_actor_name, "KUR_ACTOR_ATTRIBUTE", 1);
@@ -1594,7 +1571,7 @@ Window_kaa.prototype.lineColor = function () {
     return this.normalColor();
 };
 
-Window_kaa.prototype.drawParameters = function (x, y) {
+Window_kaa.prototype.drawParameters = function (x, y) { //绘制数据
     if (CheckNote_KAA("KUR_KAA")) {
         var lineHeight = this.lineHeight();
         var kaa = KUR_find_kaa;
@@ -1614,11 +1591,11 @@ Window_kaa.prototype.drawParameters = function (x, y) {
 };
 //------------------------------
 //TRAITS
-function GetTraits(ID) {
+function GetTraits(ID) { //特性获取
     return $dataActors[ID].traits;
 };
 
-function AddTrait(ActorId, Code, DataId, Value) {
+function AddTrait(ActorId, Code, DataId, Value) { //添加特性
     GetTraits(ActorId).push({
         code: Code,
         dataId: DataId,
@@ -1626,7 +1603,7 @@ function AddTrait(ActorId, Code, DataId, Value) {
     });
 };
 
-function LOAD_SAVE() {
+function LOAD_SAVE() {//储存至System
     try {
         if (typeof ($gameSystem.KUR) == "undefined") {
             $gameSystem.KUR = {};
@@ -1681,7 +1658,7 @@ var _kur_params = {
     LUK: 7
 };
 
-function AddParam(ActorId, paramId, value) {
+function AddParam(ActorId, paramId, value) { //属性操作
     $gameActors.actor(ActorId).addParam(paramId, value);
 };
 //----------------------------------------------------------------------------------------------
@@ -1771,14 +1748,14 @@ var _databaseFiles = [{
 
 var datalength = [];
 
-function ReadLength() {
+function ReadLength() { //读取数据文件
     try {
         for (var i = 0; i < _databaseFiles.length; i++) {
             datalength.push(JSON.parse(fs.readFileSync(_databaseFiles[i].src).toString()).length);
         };
     } catch (error) {};
 };
-(function () {
+(function () { //读取debug文件
     try {
         $.getJSON("debug.json", function (data) {
             KUR.prototype.GAMEDATA.DEBUG = data;
@@ -1796,7 +1773,7 @@ var $kur = { //引用
     Effect,
     KUR_JS,
 };
-//https://rpg.blue/thread-488633-1-2.html
+//滤镜名
 var _kur_filter = [{
     id: 0,
     name: "godray" //often
@@ -1844,7 +1821,7 @@ var _kur_filter = [{
     name: "crt"
 }];
 
-function Set_Filter(mode_, id, mode = 0) {
+function Set_Filter(mode_, id, mode = 0) { //滤镜设置
     try {
         if (mode_) {
             $gameMap.createFilter(id, _kur_filter[id].name, mode);
@@ -1854,7 +1831,7 @@ function Set_Filter(mode_, id, mode = 0) {
     } catch (error) {};
 };
 
-function Try_Catch(CODE, CODE_CATCH = "") {
+function Try_Catch(CODE, CODE_CATCH = "") { //...
     try {
         eval(CODE);
     } catch (error) {
@@ -1862,7 +1839,7 @@ function Try_Catch(CODE, CODE_CATCH = "") {
     };
 };
 
-function KUR_CODE(tag, tag1 = 0, target = 0) {
+function KUR_CODE(tag, tag1 = 0, target = 0) { //字符串解析
     try {
         if (!tag1) {
             if (BattleManager.isInTurn() || BattleManager.isTurnEnd()) {
@@ -1887,7 +1864,6 @@ function KUR_CODE(tag, tag1 = 0, target = 0) {
                         codes.push(note[l1]);
                     };
                     KUR_CODE_EVAL(codes, members[i], tag);
-
                 };
             };
         } else {
@@ -1896,7 +1872,7 @@ function KUR_CODE(tag, tag1 = 0, target = 0) {
     } catch (error) {};
 };
 
-function KUR_CODE_SKILL(target_) {
+function KUR_CODE_SKILL(target_) { //执行CODE
     var note = $dataSkills[KUR_GAME.prototype._get_use_skill().id].note;
     var start = note.indexOf("<KUR_CODE>");
     if (start == -1) {
@@ -1910,7 +1886,7 @@ function KUR_CODE_SKILL(target_) {
     };
 };
 
-function KUR_CODE_EVAL(code, target, tag) {
+function KUR_CODE_EVAL(code, target, tag) { //执行CODE
     if ((tag == "KUR_CODE[0]") && BattleManager.isTurnEnd()) {
         var codes = "";
         for (var i = 0; i < code.length; i++) {
@@ -1934,29 +1910,19 @@ function KUR_CODE_EVAL(code, target, tag) {
     };
 };
 var KUR_CODE_BattleManager_startTurn = BattleManager.startTurn;
-BattleManager.startTurn = function () {
+BattleManager.startTurn = function () { //检测
     KUR_CODE_BattleManager_startTurn.call(this);
     KUR_CODE("KUR_CODE[1]");
 };
 var KUR_CODE_BattleManager_processTurn = BattleManager.processTurn;
-BattleManager.processTurn = function () {
+BattleManager.processTurn = function () { //检测
     KUR_CODE("KUR_CODE[2]");
     KUR_CODE_BattleManager_processTurn.call(this);
     KUR_CODE("KUR_CODE[3]");
 };
 var KUR_CODE_BattleManager_endTurn = BattleManager.endTurn;
-BattleManager.endTurn = function () {
+BattleManager.endTurn = function () { //检测
     KUR_CODE("KUR_CODE[4]");
     KUR_CODE_BattleManager_endTurn.call(this);
     KUR_CODE("KUR_CODE[0]");
 };
-// var KUR_ACTION_PER = 0;
-// var KUR_Game_ActionsetSubject = Game_Action.prototype.setSubject;
-// Game_Action.prototype.setSubject = function (subject) {
-//     KUR_Game_ActionsetSubject.call(this, subject);
-//     KUR_ACTION_PER = this;
-// };
-// function GetSkillUser() {
-//     cout(KUR_ACTION_PER.subject());
-// };
-//Game_BattlerBase.prototype.paySkillCost = function(skill)
