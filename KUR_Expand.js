@@ -3,7 +3,7 @@
 // Copyright (c) 2022 KURZER
 //=============================================================================
 /*:
- * @plugindesc [v1.4] 拓展
+ * @plugindesc [v1.5] 拓展
  * @author KURZER
  * 
  * @param Error
@@ -131,7 +131,7 @@
  * 
  * 使用前请修改基本模板ID(Universal template ID):ID为数据库中对应ID的数据
  * (可以使用config.example=number;)来修改模板ID
- * (注意::本功能目前无法在运行在移动端上,只适用于桌面端>>
+ * (注意::本功能目前在移动端无效,只适用于桌面端>>
  * 如果你想要运行在移动端,可以修改KUR.JSON()->(加载数据用的,自行修改为从存档加载))
  * 使用var xxx = KUR_JS._CreateBasicDataTemplate(target);来创建基本模板
  * target的值请使用KUR_JS._BasicName();来查询
@@ -192,6 +192,41 @@
  * ["232323","你好"]
  * ...
  * </KUR_KAA>
+ * 
+ * ---------------------------------------------------------------------------- 
+ * 10.战斗运行Code
+ * 
+ * 
+ * I:每次行动执行
+ * 
+ * 在角色备注里填入
+ * 
+ * <KUR_CODE[n]>
+ * 
+ * ...(使用 _this 指代行动者)
+ * 
+ * </KUR_CODE[n]>
+ * 
+ * n = 0,1,2,3,4
+ * 
+ * 0:每次行动结束
+ * 1:行动开始前
+ * 2:行动开始后
+ * 3:行动中
+ * 4:行动结束前
+ * 
+ * 使用
+ * if(TurnEND()){...};
+ * 每回合执行
+ * 
+ * 
+ * II:每次使用技能成功时执行
+ * 
+ * 在技能备注里填入
+ * 
+ * <KUR_CODE>
+ * ...(target指代技能目标)
+ * </KUR_CODE>
  * 
  * ---------------------------------------------------------------------------- 
  * END.其它
@@ -1283,6 +1318,7 @@ function Effect() {
 };
 Effect.prototype.UseSkillonState = function (target) { //技能状态
     var skill_id = KUR_GAME.prototype._get_use_skill().id; //TOOD
+    KUR_CODE(0, 1, target);
     if (skill_id == 0) {
         return;
     }
@@ -1583,10 +1619,10 @@ Window_kaa.prototype.drawParameters = function (x, y) {
 //------------------------------
 //TRAITS
 function GetTraits(ID) {
-    return $gameActors._data[ID].traitObjects()[1].traits;
+    return $dataActors[ID].traits;
 };
 
-function AddTraitToActor(ActorId, Code, DataId, Value) {
+function AddTrait(ActorId, Code, DataId, Value) {
     GetTraits(ActorId).push({
         code: Code,
         dataId: DataId,
@@ -1637,6 +1673,20 @@ var _kur_trait = {
     FLAG_ID_PRESERVE_TP: 3,
     ICON_BUFF_START: 32,
     ICON_DEBUFF_START: 48,
+};
+var _kur_params = {
+    MHP: 0,
+    MMP: 1,
+    ATK: 2,
+    DEF: 3,
+    MAT: 4,
+    MDEF: 5,
+    AGI: 6,
+    LUK: 7
+};
+
+function AddParam(ActorId, paramId, value) {
+    $gameActors.actor(ActorId).addParam(paramId, value);
 };
 //----------------------------------------------------------------------------------------------
 //加载
@@ -1808,10 +1858,95 @@ function Set_Filter(mode_, id, mode = 0) {
     } catch (error) {};
 };
 
-function Try_Catch(CODE, CODE_CATCH) {
+function Try_Catch(CODE, CODE_CATCH = "") {
     try {
         eval(CODE);
     } catch (error) {
         eval(CODE_CATCH);
     };
+};
+
+function KUR_CODE(tag, tag1 = 0, target = 0) {
+    try {
+        if (!tag1) {
+            if (BattleManager.isInTurn() || BattleManager.isTurnEnd()) {
+                var members = BattleManager.allBattleMembers();
+                for (var i = 0; i < members.length; i++) {
+                    var codes = [];
+                    var sub = [];
+                    var note = members[i].notetags();
+                    for (var j = 0; j < note.length; j++) {
+                        if (note[j].indexOf(tag) == -1) {
+                            continue;
+                        } else {
+                            sub.push(j);
+                        };
+                    };
+                    if (!sub.length) {
+                        continue;
+                    };
+                    var l1 = 1 + sub[0];
+                    var l2 = sub[1];
+                    for (; l1 < l2; l1++) {
+                        codes.push(note[l1]);
+                    };
+                    KUR_CODE_EVAL(codes, members[i], tag);
+
+                };
+            };
+        } else {
+            KUR_CODE_SKILL(target);
+        };
+    } catch (error) {};
+};
+
+function KUR_CODE_SKILL(target_) {
+    var note = $dataSkills[KUR_GAME.prototype._get_use_skill().id].note;
+    note = note.substring(note.indexOf("<KUR_CODE>") + 10, note.indexOf("</KUR_CODE>"));
+    try {
+        eval("var target=target_;" + note);
+    } catch (error) {
+        cout(error);
+    };
+};
+
+function KUR_CODE_EVAL(code, target, tag) {
+    if ((tag == "KUR_CODE[0]") && BattleManager.isTurnEnd()) {
+        var codes = "";
+        for (var i = 0; i < code.length; i++) {
+            codes += code[i];
+        };
+        try {
+            eval("var _this=target;" + codes);
+        } catch (error) {
+            cout(error);
+        };
+    } else if (tag != "KUR_CODE[0]") {
+        var codes = "";
+        for (var i = 0; i < code.length; i++) {
+            codes += code[i];
+        };
+        try {
+            eval("var _this=target;" + codes);
+        } catch (error) {
+            cout(error);
+        };
+    };
+};
+var KUR_CODE_BattleManager_startTurn = BattleManager.startTurn;
+BattleManager.startTurn = function () {
+    KUR_CODE_BattleManager_startTurn.call(this);
+    KUR_CODE("KUR_CODE[1]");
+};
+var KUR_CODE_BattleManager_processTurn = BattleManager.processTurn;
+BattleManager.processTurn = function () {
+    KUR_CODE("KUR_CODE[2]");
+    KUR_CODE_BattleManager_processTurn.call(this);
+    KUR_CODE("KUR_CODE[3]");
+};
+var KUR_CODE_BattleManager_endTurn = BattleManager.endTurn;
+BattleManager.endTurn = function () {
+    KUR_CODE("KUR_CODE[4]");
+    KUR_CODE_BattleManager_endTurn.call(this);
+    KUR_CODE("KUR_CODE[0]");
 };
