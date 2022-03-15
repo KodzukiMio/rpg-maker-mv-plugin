@@ -811,11 +811,15 @@ function TIME_FILTER() { //滤镜设置
         var t_h = $gameVariables._data[config.hours];
         if (TIME_(t_h)) {
             if ($gameMap.enableFilter(0, 1)) {
-                Set_Filter(0, 0);
+                Set_Filter(1, 10, 0);
+                Set_Filter(0, 0, 0);
             };
         } else {
             if (!$gameMap.enableFilter(0, 1)) {
-                Set_Filter(1, 0);
+                Set_Filter(1, 10, 0);
+                if (!config.time_stat) {
+                    Set_Filter(1, 0, 0);
+                };
             };
         };
     } catch (e) {};
@@ -827,6 +831,7 @@ function TIME() { //时间控制
         if (t_h_ == time_loadfirst && !$gameParty.inBattle()) {
             var t_h = $gameVariables._data[config.hours];
             if (config.time_stat) {
+                Set_Filter(0, 0, 0);
                 GameCommand("ambient", ["#232323", "200"]);
             } else if (TIME_(t_h)) {
                 GameCommand("ambient", ["#232323", "200"]);
@@ -1047,13 +1052,9 @@ var KUR_BattleManager_endBattle = BattleManager.endBattle;
 var KUR_BattleManager_setup = BattleManager.setup;
 BattleManager.setup = function (troopId, canEscape, canLose) {
     KUR_BattleManager_setup.call(this, troopId, canEscape, canLose);
-    if (config.battle_light) {
-        Try_Catch("Set_Filter(1,10);");
-    };
 };
 BattleManager.endBattle = function (result) {
     KUR_BattleManager_endBattle.call(this, result);
-    Try_Catch("Set_Filter(0,10);");
 };
 
 function CheckNote(tag) { //查看注释是否存在并储存
@@ -1681,14 +1682,23 @@ function GAME_DATA_LOAD() { //数据加载
         return GAME_DATA_LOAD();
     };
 };
+var _kur_load_filter = 0;
 
 function START_LOAD() { //开始加载JSON
-    if (!count_load) {
-        GAME_DATA_LOAD();
-    }
-    KUR.prototype._sleep(config.LOAD_TIME, "KUR_Data.Reload_(\"\", \"all\");");
-    LOAD_SAVE();
-    TIME_FILTER();
+    if (!$gameParty.inBattle()) {
+        cout(66);
+        if (!count_load) {
+            GAME_DATA_LOAD();
+        };
+        KUR.prototype._sleep(config.LOAD_TIME, "KUR_Data.Reload_(\"\", \"all\");");
+        LOAD_SAVE();
+        TIME_FILTER();
+        if (!_kur_load_filter) {
+            Set_Filter(0, 0, 0);
+            Set_Filter(1, 10, 0);
+            _kur_load_filter++;
+        };
+    };
 };
 var KUR_LOAD_ = SceneManager.onSceneStart;
 var time_load = 0;
