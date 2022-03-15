@@ -1,9 +1,9 @@
 ﻿//=============================================================================
-// SZN_Expand.js	2022/03/13
+// SZN_Expand.js	2022/03/15
 // Copyright (c) 2022 KURZER
 //=============================================================================
 /*:
- * @plugindesc [v1.5] 拓展
+ * @plugindesc [v1.6] 拓展
  * @author KURZER
  * 
  * @param Error
@@ -181,7 +181,7 @@
  * <KUR_KAA>
  * [name0,value0]
  * [name1,value1]
- * [name2,value2]
+ * [name2,value2,color]
  * ...
  * </KUR_KAA>
  * 
@@ -189,21 +189,23 @@
  * <KUR_KAA>
  * ["金钱",$gameParty.gold()]
  * ["a"+"b",7+8]
- * ["232323","你好"]
+ * ["232323","你好","#FFFF00"]
  * ...
  * </KUR_KAA>
  * 
+ * 颜色查询:https://www.sojson.com/rgb.html
+ * 
  * ---------------------------------------------------------------------------- 
- * 10.战斗运行Code
+ * 10.Code
  * 
  * 
- * I:每次行动执行
+ * I:战斗每次行动执行
  * 
  * 在角色备注里填入
  * 
  * <KUR_CODE[n]>
  * 
- * ...(使用 _this 指代行动者)
+ * ...(使用 target 指代行动者)
  * 
  * </KUR_CODE[n]>
  * 
@@ -216,13 +218,17 @@
  * 4:行动结束前
  * 
  * 
- * II:每次使用技能成功时执行
+ * II:每次使用技能/物品时执行
  * 
- * 在技能备注里填入
+ * 在备注里填入
  * 
  * <KUR_CODE>
- * ...(target指代技能目标)
+ * ...(使用 target 指代目标)
  * </KUR_CODE>
+ * 
+ * (可以使用$gameParty.inBattle()来区别战斗与非战斗)
+ * 
+ * [注意!请不要使用target_作为变量名!]
  * 
  * ---------------------------------------------------------------------------- 
  * END.其它
@@ -1582,7 +1588,7 @@ Window_kaa.prototype.drawParameters = function (x, y) { //绘制数据
             };
             var y2 = y + lineHeight * (i % config.window_actor_max);
             var kaa_ = eval(kaa[i]);
-            this.changeTextColor(this.systemColor());
+            this.changeTextColor(kaa_.length > 2 ? kaa_[2] : this.systemColor());
             this.drawText(kaa_[0], x + config.window_actor_x_offset * (lines - 1), y2, Graphics.boxWidth);
             this.resetTextColor();
             this.drawText(kaa_[1], x + config.window_actor_x_next_offset + (lines - 1) * config.window_actor_x_offset, y2, Graphics.boxWidth, 'left');
@@ -1603,7 +1609,7 @@ function AddTrait(ActorId, Code, DataId, Value) { //添加特性
     });
 };
 
-function LOAD_SAVE() {//储存至System
+function LOAD_SAVE() { //储存至System
     try {
         if (typeof ($gameSystem.KUR) == "undefined") {
             $gameSystem.KUR = {};
@@ -1886,14 +1892,14 @@ function KUR_CODE_SKILL(target_) { //执行CODE
     };
 };
 
-function KUR_CODE_EVAL(code, target, tag) { //执行CODE
+function KUR_CODE_EVAL(code, target_, tag) { //执行CODE
     if ((tag == "KUR_CODE[0]") && BattleManager.isTurnEnd()) {
         var codes = "";
         for (var i = 0; i < code.length; i++) {
             codes += code[i];
         };
         try {
-            eval("var _this=target;" + codes);
+            eval("var target=target_;" + codes);
         } catch (error) {
             cout(error);
         };
@@ -1903,7 +1909,7 @@ function KUR_CODE_EVAL(code, target, tag) { //执行CODE
             codes += code[i];
         };
         try {
-            eval("var _this=target;" + codes);
+            eval("var target=target_;" + codes);
         } catch (error) {
             cout(error);
         };
@@ -1925,4 +1931,30 @@ BattleManager.endTurn = function () { //检测
     KUR_CODE("KUR_CODE[4]");
     KUR_CODE_BattleManager_endTurn.call(this);
     KUR_CODE("KUR_CODE[0]");
+};
+
+function KUR_CODE_ITEM(target_, subject) { //执行CODE
+    if (subject._item._dataClass == "skill" && $gameParty.inBattle()) {
+        return;
+    };
+    var note = subject.item().note;
+    var start = note.indexOf("<KUR_CODE>");
+    if (start == -1) {
+        return;
+    };
+    note = note.substring(start + 10, note.indexOf("</KUR_CODE>"));
+    try {
+        eval("var target=target_;" + note);
+    } catch (error) {
+        cout(error);
+    };
+};
+var KUR_TARGET = 0;
+var KUR_TARGET_ITEM = 0;
+var KUR_Game_Action_apply = Game_Action.prototype.apply;
+Game_Action.prototype.apply = function (target) {
+    KUR_Game_Action_apply.call(this, target);
+    KUR_TARGET = target;
+    KUR_TARGET_ITEM = this;
+    KUR_CODE_ITEM(KUR_TARGET, KUR_TARGET_ITEM);
 };
