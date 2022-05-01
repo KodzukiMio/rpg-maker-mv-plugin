@@ -3,7 +3,7 @@
 // Copyright (c) 2022 KURZER
 //=============================================================================
 /*:
- * @plugindesc [v1.65] 拓展
+ * @plugindesc [v1.66] 拓展
  * @author KURZER
  * 
  * @param Error
@@ -59,6 +59,11 @@
  * 默认值：2000
  * @default 2000
  * 
+ * @param WindowActor
+ * @desc 是否开启数据窗口
+ * 默认值：1
+ * @default 1
+ * 
  * @param WindowActorAttribute
  * @desc 窗口名
  * 默认值：额外数据
@@ -83,7 +88,7 @@
  * ============================================================================      
  * [如果不需要某些功能,请自行在插件注释掉]
  * ============================================================================
- * 
+ * 注意:确保MV版本为1.6以上!!!
  * ============================================================================
  * 1.战斗受到伤害时触发状态(被攻击后先附加状态再计算伤害)
  * 
@@ -268,13 +273,13 @@ var config_3 = {
     Eadd: Number(params["Energy Level"]) || 0,
     debug: Number(params["Debug_"]) || 0,
     load_time: Number(params["LoadTime"]) || 1000,
-    time: Number(params["Times"]),
+    time: Number(params["Time"]),
     hours: 65,
     time_stat: 0,
     ismobile: isMobile(),
     lottery: Number(params["Prize State"]) || 0,
     LOAD_TIME: Number(params["LOADTIME"]) || 2000,
-    window_actor: 1,
+    window_actor: Number(params["WindowActor"]),
     window_actor_name: params["WindowActorAttribute"] || "额外属性",
     window_actor_max: Number(params["WindowActorAttribute_max"]) || 9,
     window_actor_x_offset: Number(params["WindowActorAttribute_x_offset"]),
@@ -316,6 +321,15 @@ function ERROR_THOROUGH(err) { //错误抛出
         return console.error(err);
     } else {
         return;
+    };
+};
+
+function NoteTags(target) {
+    if (target.isEnemy()) {
+        return target.enemy().note.split(/[\r\n]+/)
+    };
+    if (target.isActor()) {
+        return target.actor().note.split(/[\r\n]+/)
     };
 };
 
@@ -1071,7 +1085,7 @@ BattleManager.endBattle = function (result) {
 function CheckNote(tag) { //查看注释是否存在并储存
     KUR_find = [];
     try {
-        var per = THIS_PERSON.notetags();
+        var per = NoteTags(THIS_PERSON);
         var len = per.length;
         for (var i = 0; i < len; i++) {
             if (per[i].indexOf(tag) == -1) {
@@ -1441,7 +1455,7 @@ var KUR_find_kaa;
 function CheckNote_KAA(tag) { //检查note
     KUR_find_kaa = [];
     try {
-        var per = KAA_THIS_ACTOR.notetags();
+        var per = NoteTags(KAA_THIS_ACTOR);
         var len = per.length;
         for (var i = 0; i < len; i++) {
             if (per[i].indexOf(tag) == -1) {
@@ -1711,9 +1725,20 @@ function START_LOAD() { //开始加载JSON
         };
     };
 };
+
+function FILTER_1() {
+    try {
+        if (!$gameTemp._shiftfilter.length) {
+            $gameTemp.createshiftfilter(300, 250, 1000, 00, 999999, 2);
+        };
+    } catch (error) {};
+};
 var KUR_LOAD_ = SceneManager.onSceneStart;
 var time_load = 0;
 SceneManager.onSceneStart = function () {
+    if (!SceneManager._exiting) {
+        FILTER_1();
+    };
     KUR_LOAD_.call(this);
     if (!config_3.ismobile) {
         START_LOAD();
@@ -1875,7 +1900,7 @@ function KUR_CODE(tag, tag1 = 0, target = 0) { //字符串解析
                 for (var i = 0; i < members.length; i++) {
                     var codes = [];
                     var sub = [];
-                    var note = members[i].notetags();
+                    var note = NoteTags(members[i]);
                     for (var j = 0; j < note.length; j++) {
                         if (note[j].indexOf(tag) == -1) {
                             continue;
@@ -1997,7 +2022,7 @@ var __PATH = "";
 var __SRC = "";
 var KUR_COUNT = 0;
 var KUR_count = 0;
-var __ENABLE__ENCRYPT = 0;//Process >> TODO
+var __ENABLE__ENCRYPT = 0; //Process >> TODO
 
 function DataApply(path_ = __PATH) {
     if (!__ENABLE__ENCRYPT) {
