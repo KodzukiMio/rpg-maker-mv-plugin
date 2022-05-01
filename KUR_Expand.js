@@ -42,12 +42,6 @@
  * 默认值：0
  * @default 0
  * 
- * @param Debug_
- * @desc (此功能需要Jquery.js)
- * (插件调试用)
- * 默认值：0
- * @default 0
- * 
  * @param Time
  * @desc (MOG_TimeSystem与-ShoraLighting兼容)
  * 地图备注使用<NOLIGHT>关闭MOG的光照
@@ -102,6 +96,7 @@
  * 
  * 脚本:KUR_JS._Lottery(n, m);   //n类别,m次数
  * 使用前请先修改右侧的Prize ID与Encouragement Award
+ * 消息提示请再JS内搜索 "const message_plu_" ... 自行修改.
  * n:1物品
  *   2武器
  *   3护甲
@@ -253,6 +248,13 @@
 //         filter.brightness = cp[3];
 //     };
 var params = PluginManager.parameters("KUR_Expand");
+//----------------------------------------------------------------------------------------------
+//variables
+const message_plu_2 = "已存在,转化为";
+const message_plu_3 = "你获得的物品请在背包查看";
+const message_plu_4 = "获得";
+const message_plu_5 = "pt";
+const message_plu_6 = "角色";
 
 function isMobile() {
     if (window.navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i)) {
@@ -264,14 +266,11 @@ function isMobile() {
 //获取设置
 var config_3 = {
     id1: Number(params["Prize ID"]) || 76, //抽奖物品ID
-    event1: 5, //debug事件
-    id2: 1, //debug Name
     Smaxtp: Number(params["MaxTp"]) || 100,
     example: Number(params["Universal template ID"]) || 200, //通用模板ID
     M1: Number(params["Encouragement Award"]) || "$gameParty.gainGold(M);", //鼓励奖
     error: Number(params["Error"]) || 0,
     Eadd: Number(params["Energy Level"]) || 0,
-    debug: Number(params["Debug_"]) || 0,
     load_time: Number(params["LoadTime"]) || 1000,
     time: Number(params["Time"]),
     hours: 65,
@@ -375,225 +374,11 @@ KUR_JS._Find = function (target, Attributes, value) { //查找符合target的Att
     return RESULT;
 }
 //----------------------------------------------------------------------------------------------
-//variables
-const message_plu_1 = "AQKAVMhLxob3KL4qgncgLgNoA9BccoJcjBOQQSQCKAw/wJ7qAOpoDwKANAG7qAbyoPOJBAuuMKBAMoBeAdgGMAZgGcApgBdgqYMXaA+6MB2/gXSpAIW45AvpqB8Q0BleujkR2vQUICGAEwvTZ7QHkagAqViO3YAYlFepztj/YRbEANjaGwIDzioCIOs567viqGtje3L5CNGZBMjTsgGA6TDRK6B7xLonAJsIA9gAOYuyAykaAAPougDKugEbpJWVCAgHl7IDOioC3qc0tQA=";
-const message_plu_2 = "k+6g1tQU6gNINvGGjKhcckAA";
-const message_plu_3 = "gbynbgzp+oIW6JZOiDKo79GAp1QMwGFBlQp+aGh3IAA=";
-const message_plu_4 = "u3BnT9IA";
-const message_plu_5 = "A4FyAA==";
-const message_plu_6 = "kuRicggEQAA=";
-//----------------------------------------------------------------------------------------------
-//Base64 & MD5
-var base64 = new Base64();
-
-function Base64() {
-
-    // private property  
-    _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
-    // public method for encoding  
-    this.encode = function (input) {
-        var output = "";
-        var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-        var i = 0;
-        input = _utf8_encode(input);
-        while (i < input.length) {
-            chr1 = input.charCodeAt(i++);
-            chr2 = input.charCodeAt(i++);
-            chr3 = input.charCodeAt(i++);
-            enc1 = chr1 >> 2;
-            enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-            enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-            enc4 = chr3 & 63;
-            if (isNaN(chr2)) {
-                enc3 = enc4 = 64;
-            } else if (isNaN(chr3)) {
-                enc4 = 64;
-            }
-            output = output +
-                _keyStr.charAt(enc1) + _keyStr.charAt(enc2) +
-                _keyStr.charAt(enc3) + _keyStr.charAt(enc4);
-        }
-        return output;
-    }
-
-    // public method for decoding  
-    this.decode = function (input) {
-        var output = "";
-        var chr1, chr2, chr3;
-        var enc1, enc2, enc3, enc4;
-        var i = 0;
-        input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-        while (i < input.length) {
-            enc1 = _keyStr.indexOf(input.charAt(i++));
-            enc2 = _keyStr.indexOf(input.charAt(i++));
-            enc3 = _keyStr.indexOf(input.charAt(i++));
-            enc4 = _keyStr.indexOf(input.charAt(i++));
-            chr1 = (enc1 << 2) | (enc2 >> 4);
-            chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-            chr3 = ((enc3 & 3) << 6) | enc4;
-            output = output + String.fromCharCode(chr1);
-            if (enc3 != 64) {
-                output = output + String.fromCharCode(chr2);
-            }
-            if (enc4 != 64) {
-                output = output + String.fromCharCode(chr3);
-            }
-        }
-        output = _utf8_decode(output);
-        return output;
-    }
-
-    // private method for UTF-8 encoding  
-    _utf8_encode = function (string) {
-        string = string.replace(/\r\n/g, "\n");
-        var utftext = "";
-        for (var n = 0; n < string.length; n++) {
-            var c = string.charCodeAt(n);
-            if (c < 128) {
-                utftext += String.fromCharCode(c);
-            } else if ((c > 127) && (c < 2048)) {
-                utftext += String.fromCharCode((c >> 6) | 192);
-                utftext += String.fromCharCode((c & 63) | 128);
-            } else {
-                utftext += String.fromCharCode((c >> 12) | 224);
-                utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-                utftext += String.fromCharCode((c & 63) | 128);
-            }
-
-        }
-        return utftext;
-    }
-
-    // private method for UTF-8 decoding  
-    _utf8_decode = function (utftext) {
-        var string = "";
-        var i = 0;
-        var c = c1 = c2 = 0;
-        while (i < utftext.length) {
-            c = utftext.charCodeAt(i);
-            if (c < 128) {
-                string += String.fromCharCode(c);
-                i++;
-            } else if ((c > 191) && (c < 224)) {
-                c2 = utftext.charCodeAt(i + 1);
-                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-                i += 2;
-            } else {
-                c2 = utftext.charCodeAt(i + 1);
-                c3 = utftext.charCodeAt(i + 2);
-                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-                i += 3;
-            }
-        }
-        return string;
-    }
-}! function (n) {
-    "use strict";
-
-    function d(n, t) {
-        var r = (65535 & n) + (65535 & t);
-        return (n >> 16) + (t >> 16) + (r >> 16) << 16 | 65535 & r
-    }
-
-    function f(n, t, r, e, o, u) {
-        return d((c = d(d(t, n), d(e, u))) << (f = o) | c >>> 32 - f, r);
-        var c, f
-    }
-
-    function l(n, t, r, e, o, u, c) {
-        return f(t & r | ~t & e, n, t, o, u, c)
-    }
-
-    function v(n, t, r, e, o, u, c) {
-        return f(t & e | r & ~e, n, t, o, u, c)
-    }
-
-    function g(n, t, r, e, o, u, c) {
-        return f(t ^ r ^ e, n, t, o, u, c)
-    }
-
-    function m(n, t, r, e, o, u, c) {
-        return f(r ^ (t | ~e), n, t, o, u, c)
-    }
-
-    function i(n, t) {
-        var r, e, o, u, c;
-        n[t >> 5] |= 128 << t % 32, n[14 + (t + 64 >>> 9 << 4)] = t;
-        var f = 1732584193,
-            i = -271733879,
-            a = -1732584194,
-            h = 271733878;
-        for (r = 0; r < n.length; r += 16) f = l(e = f, o = i, u = a, c = h, n[r], 7, -680876936), h = l(h, f, i, a, n[r + 1], 12, -389564586), a = l(a, h, f, i, n[r + 2], 17, 606105819), i = l(i, a, h, f, n[r + 3], 22, -1044525330), f = l(f, i, a, h, n[r + 4], 7, -176418897), h = l(h, f, i, a, n[r + 5], 12, 1200080426), a = l(a, h, f, i, n[r + 6], 17, -1473231341), i = l(i, a, h, f, n[r + 7], 22, -45705983), f = l(f, i, a, h, n[r + 8], 7, 1770035416), h = l(h, f, i, a, n[r + 9], 12, -1958414417), a = l(a, h, f, i, n[r + 10], 17, -42063), i = l(i, a, h, f, n[r + 11], 22, -1990404162), f = l(f, i, a, h, n[r + 12], 7, 1804603682), h = l(h, f, i, a, n[r + 13], 12, -40341101), a = l(a, h, f, i, n[r + 14], 17, -1502002290), f = v(f, i = l(i, a, h, f, n[r + 15], 22, 1236535329), a, h, n[r + 1], 5, -165796510), h = v(h, f, i, a, n[r + 6], 9, -1069501632), a = v(a, h, f, i, n[r + 11], 14, 643717713), i = v(i, a, h, f, n[r], 20, -373897302), f = v(f, i, a, h, n[r + 5], 5, -701558691), h = v(h, f, i, a, n[r + 10], 9, 38016083), a = v(a, h, f, i, n[r + 15], 14, -660478335), i = v(i, a, h, f, n[r + 4], 20, -405537848), f = v(f, i, a, h, n[r + 9], 5, 568446438), h = v(h, f, i, a, n[r + 14], 9, -1019803690), a = v(a, h, f, i, n[r + 3], 14, -187363961), i = v(i, a, h, f, n[r + 8], 20, 1163531501), f = v(f, i, a, h, n[r + 13], 5, -1444681467), h = v(h, f, i, a, n[r + 2], 9, -51403784), a = v(a, h, f, i, n[r + 7], 14, 1735328473), f = g(f, i = v(i, a, h, f, n[r + 12], 20, -1926607734), a, h, n[r + 5], 4, -378558), h = g(h, f, i, a, n[r + 8], 11, -2022574463), a = g(a, h, f, i, n[r + 11], 16, 1839030562), i = g(i, a, h, f, n[r + 14], 23, -35309556), f = g(f, i, a, h, n[r + 1], 4, -1530992060), h = g(h, f, i, a, n[r + 4], 11, 1272893353), a = g(a, h, f, i, n[r + 7], 16, -155497632), i = g(i, a, h, f, n[r + 10], 23, -1094730640), f = g(f, i, a, h, n[r + 13], 4, 681279174), h = g(h, f, i, a, n[r], 11, -358537222), a = g(a, h, f, i, n[r + 3], 16, -722521979), i = g(i, a, h, f, n[r + 6], 23, 76029189), f = g(f, i, a, h, n[r + 9], 4, -640364487), h = g(h, f, i, a, n[r + 12], 11, -421815835), a = g(a, h, f, i, n[r + 15], 16, 530742520), f = m(f, i = g(i, a, h, f, n[r + 2], 23, -995338651), a, h, n[r], 6, -198630844), h = m(h, f, i, a, n[r + 7], 10, 1126891415), a = m(a, h, f, i, n[r + 14], 15, -1416354905), i = m(i, a, h, f, n[r + 5], 21, -57434055), f = m(f, i, a, h, n[r + 12], 6, 1700485571), h = m(h, f, i, a, n[r + 3], 10, -1894986606), a = m(a, h, f, i, n[r + 10], 15, -1051523), i = m(i, a, h, f, n[r + 1], 21, -2054922799), f = m(f, i, a, h, n[r + 8], 6, 1873313359), h = m(h, f, i, a, n[r + 15], 10, -30611744), a = m(a, h, f, i, n[r + 6], 15, -1560198380), i = m(i, a, h, f, n[r + 13], 21, 1309151649), f = m(f, i, a, h, n[r + 4], 6, -145523070), h = m(h, f, i, a, n[r + 11], 10, -1120210379), a = m(a, h, f, i, n[r + 2], 15, 718787259), i = m(i, a, h, f, n[r + 9], 21, -343485551), f = d(f, e), i = d(i, o), a = d(a, u), h = d(h, c);
-        return [f, i, a, h]
-    }
-
-    function a(n) {
-        var t, r = "",
-            e = 32 * n.length;
-        for (t = 0; t < e; t += 8) r += String.fromCharCode(n[t >> 5] >>> t % 32 & 255);
-        return r
-    }
-
-    function h(n) {
-        var t, r = [];
-        for (r[(n.length >> 2) - 1] = void 0, t = 0; t < r.length; t += 1) r[t] = 0;
-        var e = 8 * n.length;
-        for (t = 0; t < e; t += 8) r[t >> 5] |= (255 & n.charCodeAt(t / 8)) << t % 32;
-        return r
-    }
-
-    function e(n) {
-        var t, r, e = "0123456789abcdef",
-            o = "";
-        for (r = 0; r < n.length; r += 1) t = n.charCodeAt(r), o += e.charAt(t >>> 4 & 15) + e.charAt(15 & t);
-        return o
-    }
-
-    function r(n) {
-        return unescape(encodeURIComponent(n))
-    }
-
-    function o(n) {
-        return a(i(h(t = r(n)), 8 * t.length));
-        var t
-    }
-
-    function u(n, t) {
-        return function (n, t) {
-            var r, e, o = h(n),
-                u = [],
-                c = [];
-            for (u[15] = c[15] = void 0, 16 < o.length && (o = i(o, 8 * n.length)), r = 0; r < 16; r += 1) u[r] = 909522486 ^ o[r], c[r] = 1549556828 ^ o[r];
-            return e = i(u.concat(h(t)), 512 + 8 * t.length), a(i(c.concat(e), 640))
-        }(r(n), r(t))
-    }
-
-    function t(n, t, r) {
-        return t ? r ? u(t, n) : e(u(t, n)) : r ? o(n) : e(o(n))
-    }
-    "function" == typeof define && define.amd ? define(function () {
-        return t
-    }) : "object" == typeof module && module.exports ? module.exports = t : n.md5 = t
-}(this);
-//# sourceMappingURL=md5.min.js.map
-//----------------------------------------------------------------------------------------------
 //其它
-function axf(max, min) { //随机数
+function RandomNumber(max, min) { //随机数
     return Math.floor(Math.random() * (max - min)) + min
 }
-var szn_vul1 = szn_vul1 || parseInt(axf(10000000, 99999999)); //私用
-var szn_vul2 = base64.encode(String(szn_vul1)); //私用
-let Count = Number;
-var Lb64 = LZString.decompressFromBase64;
 //----------------------------------------------------------------------------------------------
-
-function counts(n = 0) { //计数
-    let count = Number;
-    count > Number(num) ? count = 0 : count += Number(numadd);
-    Count = count;
-    return Count *= n
-}
 
 function to_number(str_array) { //字符串数组转换数字
     var len = str_array.length;
@@ -746,7 +531,6 @@ KUR.prototype._cout = { //偷懒用
     }
 };
 var cout = KUR.prototype._cout.c;
-var eout = KUR.prototype._cout.e;
 var Quick = {
     getmapid: function (x, y) {
         return KUR.prototype._getxy.MapEvent(x, y);
@@ -817,7 +601,7 @@ function TIME_(time) { //时间检测
     TIME__S = false;
     return false;
 }
-var t_h_ = 0;
+var KUR_t_h_ = 0;
 var MapID = 0;
 var KUR_TIME__ = DataManager.onLoad;
 DataManager.onLoad = function (object) {
@@ -853,7 +637,7 @@ function TIME_FILTER() { //滤镜设置
 
 function TIME() { //时间控制
     try {
-        if (t_h_ == time_loadfirst && !$gameParty.inBattle()) {
+        if (KUR_t_h_ == time_loadfirst && !$gameParty.inBattle()) {
             var t_h = $gameVariables._data[config_3.hours];
             if (config_3.time_stat) {
                 Set_Filter(0, 0, 0);
@@ -864,9 +648,9 @@ function TIME() { //时间控制
                 GameCommand("ambient", ["#FFFFFF", "100"]);
             };
             TIME_FILTER();
-            t_h_ = 0;
+            KUR_t_h_ = 0;
         };
-        t_h_++;
+        KUR_t_h_++;
     } catch (e) {};
 };
 KUR.prototype.update = SceneManager.update;
@@ -934,7 +718,7 @@ var rad = {
                     var id = config_3.id1;
                     var g = $gameActors._data[o];
                     var p = parseInt((g.agi + g.atk + g.def + g.mdf + g.mat + g.mhp + g.mmp) / g.level);
-                    $gameMessage.add(Lb64(message_plu_6) + String($gameActors._data[o]._name) + Lb64(message_plu_2) + " " + String($dataItems[id].name) + "x" + String(p));
+                    $gameMessage.add(message_plu_6 + String($gameActors._data[o]._name) + message_plu_2 + " " + String($dataItems[id].name) + "x" + String(p));
                     $gameParty.gainItem($dataItems[id], p, )
                 }
 
@@ -957,116 +741,25 @@ var rad = {
                 q(y);
             };
             if (config_3.lottery) {
-                $gameMessage.add(Lb64(message_plu_4) + Ma + Lb64(message_plu_5));
-                $gameMessage.add(Lb64(message_plu_3));
+                $gameMessage.add(message_plu_4 + Ma + message_plu_5);
+                $gameMessage.add(message_plu_3);
             };
         }
     },
     ui: config_3_2,
 };
 //----------------------------------------------------------------------------------------------
-//插件Debug
-var SDEBUG = false;
-if (config_3.debug) {
-    try {
-        $(document).keyup = function (event) {
-            if (!event.ctrlKey && !event.altKey) {
-                switch (event.keyCode) {
-                    case 116: // F5
-                        if (Utils.isNwjs()) {
-                            location.reload();
-                        }
-                        break;
-                    case 119: // F8
-                        if (SDEBUG) {
-                            require('nw.gui').Window.get().showDevTools();
-                        }
-                        break;
-                    case 120:
-                        if (SDEBUG) {
-                            var ND = KMS_DEBUG() || {};
-                        }
-                }
-            }
-        };
-        $(document).keyup(function (event) {
-            if (event.ctrlKey && event.keyCode == 192 && SDEBUG) {
-                $gameTemp.reserveCommonEvent(config_3.event1);
-
-            }
-
-        });
-    } catch (e) {};
-};
-
-
-function szn_debug() {
-    SDEBUG = true;
-    var vConsole = new VConsole() || {};
-};
-
-function szn_de() { //use debug
-    md5($gameActors._data[config_3.id2]._name) == "5f4c478bc603a3281edb0b03f29ae372" ? szn_debug() : null;
-};
-
-function debug_load() {
-    md5($gameActors._data[config_3.id2]._name) == "5f4c478bc603a3281edb0b03f29ae372" ? $gameActors._data[config_3.id2]._name = $dataActors[config_3.id2].name : null;
-};
-
-function KUR_DEBUG() {
-    this.initialize.apply(this, arguments);
-};
-KUR_DEBUG.prototype.initialize = function () {
-
-};
-KUR_DEBUG.prototype.SDEBUG = function (state) {
-    if (state) {
-        SDEBUG = true;
-    } else {
-        SDEBUG = false;
-    }
-}
-KUR_DEBUG.prototype.ShowDebugWindow = function () {
-    SceneManager.push(Scene_Debug);
-}
-KUR_DEBUG.prototype._debug = function () {
-    szn_debug();
-}
-KUR_DEBUG.prototype._debug_show = function () {
-    $gameTemp.reserveCommonEvent(config_3.event1);
-}
-KUR_DEBUG.prototype.Get_all_roles = function () {
-    var num = $dataActors.length - 1;
-    for (i = 0; i < num; ++i) {
-        try {
-            if (!$dataActors[i].battlerName == "") {
-                $gameParty.addActor(i);
-            }
-        } catch (e) {};
-    };
-};
-KUR_DEBUG.prototype.EVALCODE = function (id) {
-    var ID = id.toString();
-    var kdata = KUR.prototype.GAMEDATA.DEBUG;
-    var len = kdata.length;
-    for (i = 0; i < len; i++) {
-        if (kdata[i].id == ID) {
-            return eval(kdata[i].code);
-        }
-    }
-}
-//----------------------------------------------------------------------------------------------
 //战斗受到伤害前添加状态(在武器备注写: <SZN_Damage_State:状态ID> )
-function act_w(id) { //解析注释
+function SZN_Damage_State_act_w(id) { //解析注释
     try {
         var q = Number($gameActors.actor(id).weapons(0)[0].metaArray.SZN_Damage_State[0]);
         $gameActors.actor(id).addState(q);
-    } catch (err) {} finally {}
-}
+    } catch (err) {};
+};
 var SZN_Game_Battler_onDamage = Game_Battler.prototype.onDamage;
 Game_Battler.prototype.onDamage = function (value) { //受到伤害时
     SZN_Game_Battler_onDamage.call(this, value);
-    act_w(this._actorId);
+    SZN_Damage_State_act_w(this._actorId);
 };
 //----------------------------------------------------------------------------------------------
 //战斗拓展
@@ -1726,7 +1419,7 @@ function START_LOAD() { //开始加载JSON
     };
 };
 
-function FILTER_1() {
+function KUR_FILTER_1() {
     try {
         if (!$gameTemp._shiftfilter.length) {
             $gameTemp.createshiftfilter(300, 250, 1000, 00, 999999, 2);
@@ -1737,28 +1430,13 @@ var KUR_LOAD_ = SceneManager.onSceneStart;
 var time_load = 0;
 SceneManager.onSceneStart = function () {
     if (!SceneManager._exiting) {
-        FILTER_1();
+        KUR_FILTER_1();
     };
     KUR_LOAD_.call(this);
     if (!config_3.ismobile) {
         START_LOAD();
     };
     count_load++;
-};
-//----------------------------------------------------------
-//(可删除)js文件处理json
-function OutJsToJson() {
-    try {
-        var len = $plugins.length;
-        var str = "";
-        for (var i = 0; i < len; i++) {
-            str = str + "$" + "START:" + $plugins[i].name + ":FINAL";
-        }
-        szn_file_output(str, "plugins");
-        return 1;
-    } catch (e) {
-        return 0;
-    };
 };
 //----------------------------------------------------------
 var _databaseFiles = [{
@@ -1819,7 +1497,6 @@ function ReadLength() { //读取数据文件
 var $kur = { //引用
     KUR,
     KUR_Battle,
-    KUR_DEBUG,
     KUR_EXE,
     KUR_GAME,
     KUR_Data,
@@ -1882,14 +1559,6 @@ function Set_Filter(mode_, id, mode = 0) { //滤镜设置
             $gameMap.eraseFilterAfterMove(id);
         };
     } catch (error) {};
-};
-
-function Try_Catch(CODE, CODE_CATCH = "") { //...
-    try {
-        eval(CODE);
-    } catch (error) {
-        eval(CODE_CATCH);
-    };
 };
 
 function KUR_CODE(tag, tag1 = 0, target = 0) { //字符串解析
@@ -2009,68 +1678,4 @@ let sleepFun = function (fun, time) {
     setTimeout(function () {
         return fun();
     }, time);
-};
-var kur_cprocess;
-try {
-    kur_cprocess = require('child_process');
-} catch (error) {};
-
-function RunProcess(path, params) {
-    kur_cprocess.execFile(path, params);
-};
-var __PATH = "";
-var __SRC = "";
-var KUR_COUNT = 0;
-var KUR_count = 0;
-var __ENABLE__ENCRYPT = 0; //Process >> TODO
-
-function DataApply(path_ = __PATH) {
-    if (!__ENABLE__ENCRYPT) {
-        return 0;
-    };
-    __PATH = path_;
-    if (!KUR_count) {
-        KUR_count++;
-        RunProcess("data.exe", [process.cwd() + "\\www\\data\\" + __PATH]);
-    };
-    if (isOk()) {
-        KUR_COUNT = 0;
-        KUR_count = 0;
-        return __SRC;
-    } else {
-        if (KUR_COUNT >= 1000) {
-            return 0;
-        };
-        KUR_COUNT++;
-        return sleepFun(DataApply, 10);
-    };
-};
-
-function isOk(path = "isOk.data") {
-    if (!__ENABLE__ENCRYPT) {
-        return 0;
-    };
-    var src = fs.readFileSync(path).toString();
-    if (src == "OK") {
-        fs.writeFile(path, "", function (err) {
-            if (err) {
-                ERROR_THOROUGH(err);
-            };
-        });
-        __SRC = fs.readFileSync("load.json").toString();
-        fs.writeFile("load.json", "", function (err) {
-            if (err) {
-                ERROR_THOROUGH(err);
-            };
-        });
-        return 1;
-    };
-    return 0;
-};
-var kur_fs1, kur_fs2;
-if (__ENABLE__ENCRYPT) {
-    kur_fs1 = fs.createWriteStream("isOk.data");
-    kur_fs1.write("");
-    kur_fs2 = fs.createWriteStream("load.json");
-    kur_fs2.write("");
 };
