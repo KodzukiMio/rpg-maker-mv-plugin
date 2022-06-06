@@ -1,9 +1,9 @@
 ﻿//=============================================================================
-// KUR_Expand.js	2022/03/15
+// KUR_Expand.js	2022/06/06
 // Copyright (c) 2022 KURZER
 //=============================================================================
 /*:
- * @plugindesc [v1.66] 拓展
+ * @plugindesc [v1.0] 拓展
  * @author KURZER
  * 
  * @param Error
@@ -47,11 +47,6 @@
  * 地图备注使用<NOLIGHT>关闭MOG的光照
  * 默认值：0
  * @default 0
- * 
- * @param LOADTIME
- * @desc (如果出现recipeItem报错,根据需求适当增加 加载时间(ms))
- * 默认值：2000
- * @default 2000
  * 
  * @param WindowActor
  * @desc 是否开启数据窗口
@@ -126,36 +121,30 @@
  * ----------------------------------------------------------------------------
  * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人,敌群
  * 
- * 注意!!!:每次启用新插件时必须清空KUR_DATA文件夹
- * 或者使用 KUR.Json("c",{},"all"); 来清空
- * 
  * 使用前请修改基本模板ID(Universal template ID):ID为数据库中对应ID的数据
  * (可以使用config_3.example=number;)来修改模板ID
- * (注意::本功能目前在移动端无效(在移动端除了此功能外其它功能都生效),只适用于桌面端>>
- * 如果你想要运行在移动端,可以修改KUR.JSON()->(加载数据用的,自行修改为从存档加载))
- * 使用var xxx = KUR_JS._CreateBasicDataTemplate(target);来创建基本模板
+ * 使用var xxx = KUR_Data.BasicTemplate(target);来创建基本模板
  * target的值请使用KUR_JS._BasicName();来查询
  * 然后修改xxx的属性值
- * 最后使用KUR_JS._CreateData(xxx);来创建数据
+ * 最后使用KUR_Data.CreateData(xxx);来创建数据
  * 使用var xxx = KUR_JS._Find(target, Attributes, value);
  * 来查找符合target的Attributes属性==value的对象;
  * 函数返回一个数组
  * xxx为查找结果
  * (例如var f=KUR_JS._Find("item","name","生命药水");)
  * (f就是符合$dataItems[..].name=="生命药水"的对象集合)
- * 如果要修改数据,请使用KUR_target来修改数据(target的值请使用KUR_JS._BasicName();来查询)
- * 例如KUR_item
- * 然后使用KUR_Data.Reload_(target);来重新加载数据(例如KUR_Data.Reload_("item");)
+ * 如果要修改数据,请使用$KURDATA.Customize来修改数据
+ * 然后使用KUR_Reload(target);来重新加载数据(例如KUR_Reload("item");)
  * 
  * 保姆教程:
  * 
  * 我设置了Universal template ID为10
  * 所以模板ID变为了10
- * 我使用 var part_1 = KUR_JS._CreateBasicDataTemplate("item");
+ * 我使用 var part_1 = KUR_Data.BasicTemplate("item");
  * (以数据库的10号物品为模板创建数据)
  * 然后 part_1.data.name = "ABCD";(物品名修改)
  *      part_1.data.iconIndex = 100;(物品图标修改)
- * 最后 KUR_JS._CreateData(part_1);
+ * 最后 KUR_Data.CreateData(part_1);
  * 于是就在数据库添加了新的物品(id为数据库物品ID的最大值+1).
  * 我使用了 $gameParty.gainItem($dataItems[200],1,);(这里200是创建后自动生成的物品ID)
  * 于是我获得了名为"ABCD"的新物品
@@ -231,7 +220,8 @@
  * (可以使用$gameParty.inBattle()来区别战斗与非战斗)
  * 
  * [注意!请不要使用target_作为变量名!]
- * [使用请注意不是无效技能或物品,例如技能伤害为0]
+ * [使用请注意不是无效技能或物品,例如技能伤害为0,确保物品被使用!!!]
+ * [例如使用TP+1]
  * ---------------------------------------------------------------------------- 
  * END.其它
  * 
@@ -246,8 +236,14 @@
 //         filter.bloomScale = 0.4;
 //         filter.threshold = 0.8;
 //         filter.brightness = cp[3];
+
+const {
+    constants
+} = require("buffer");
+
 //     };
 var params = PluginManager.parameters("KUR_Expand");
+var $KURDATA = {};
 //----------------------------------------------------------------------------------------------
 //variables
 const message_plu_2 = "已存在,转化为";
@@ -255,6 +251,7 @@ const message_plu_3 = "你获得的物品请在背包查看";
 const message_plu_4 = "获得";
 const message_plu_5 = "pt";
 const message_plu_6 = "角色";
+const message_norune = "你没有开启符文";
 
 function isMobile() {
     if (window.navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i)) {
@@ -277,7 +274,6 @@ var config_3 = {
     time_stat: 0,
     ismobile: isMobile(),
     lottery: Number(params["Prize State"]) || 0,
-    LOAD_TIME: Number(params["LOADTIME"]) || 2000,
     window_actor: Number(params["WindowActor"]),
     window_actor_name: params["WindowActorAttribute"] || "额外属性",
     window_actor_max: Number(params["WindowActorAttribute_max"]) || 9,
@@ -315,7 +311,7 @@ var _config_3_1 = { //这个是模板,请不要动第一个元素.
     },
 };
 
-function ERROR_THOROUGH(err) { //错误抛出
+function ERROR_THOROUGH(err) { //错误
     if (config_3.error) {
         return console.error(err);
     } else {
@@ -402,19 +398,8 @@ try {
     fs = require("fs");
 } catch (e) {};
 //加载数据使用
-var KUR_item = [];
-var KUR_armor = [];
-var KUR_skill = [];
-var KUR_actor = [];
-var KUR_weapon = [];
-var KUR_state = [];
-var KUR_enemy = [];
-var KUR_troop = [];
-var KUR_class = [];
 var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$dataWeapons", "$dataStates", "$dataEnemies", "$dataTroops", "$dataClasses"];
 var KUR_json_name = ["item", "armor", "skill", "actor", "weapon", "state", "enemy", "troop", "class"];
-var KUR_w_data = [];
-var KUR_json_member_length = [];
 
 KUR.to$ = function (items) { //获取对应名称
     var f1 = KUR.Find(KUR_json_name, items);
@@ -440,64 +425,17 @@ KUR.Find = function (target, items, start = 0) { //查找
         return -1;
     }
 };
-KUR.GetLength = function (item) { //获取数据长度
-    return eval(KUR.to$(item) + ".length;");
-};
+
 KUR.GetStaticLength = function (target) { //获取数据原本长度
-    return KUR_json_member_length[KUR.Find(KUR_json_name, target)];
+    return datalength[KUR.Find(KUR_json_name, target)];
 };
-KUR.Load_json_length = function () { //加载
-    KUR_json_member_length = datalength;
-    return true;
-};
-//JSON操作
-KUR.Json = function (target = "read", data = {}, target_ = "") {
-    var len = KUR_json_name.length - 1;
-    if (target == "read" || target == 'r') {
-        if (target_ != "") {
-            var str1 = "./KUR_DATA/" + target_ + ".json";
-            var str2 = "KUR_" + target_;
-            eval("fs.readFile(str1, function (err, data){if(err){return ERROR_THOROUGH(err);};" + str2 + "=data.toString();" + str2 + "=JSON.parse(" + str2 + ");});");
-        } else {
-            for (i = 0; i < len; i++) {
-                var str1 = "./KUR_DATA/" + KUR_json_name[i] + ".json";
-                var str2 = "KUR_" + KUR_json_name[i];
-                eval("fs.readFile(str1, function (err, data){if(err){return ERROR_THOROUGH(err);};" + str2 + "=data.toString();" + str2 + "=JSON.parse(" + str2 + ");});");
-            };
-        }
-    } else if (target == "clear" || target == 'c') {
-        if (target_ == "all") {
-            for (i = 0; i < len; i++) {
-                var str1 = "./KUR_DATA/" + KUR_json_name[i] + ".json";
-                fs.writeFile(str1, "[]", function (err) {
-                    if (err) {
-                        ERROR_THOROUGH(err);
-                    };
-                });
-            };
-        } else {
-            var str1 = "./KUR_DATA/" + target_ + ".json";
-            fs.writeFile(str1, "[]", function (err) {
-                if (err) {
-                    ERROR_THOROUGH(err);
-                };
-            });
-        }
-    } else if (target == "save") {
-        var str_ = "./KUR_DATA/" + target_ + ".json";
-        var str_n = "KUR_" + target_;
-        eval("var st=JSON.stringify(" + str_n + ");fs.writeFile(\"" + str_ + "\",st,function(err){if(err){ERROR_THOROUGH(err);};});");
-    } else {
-        KUR_w_data = data;
-        var str_ = "./KUR_DATA/" + target + ".json";
-        var str_n = "KUR_" + target;
-        eval(str_n + ".push(KUR_w_data);var st=JSON.stringify(" + str_n + ");fs.writeFile(\"" + str_ + "\",st,function(err){if(err){ERROR_THOROUGH(err);}});");
-    };
-};
+
 KUR.Load = function (target) { //加载json
     var data = eval("KUR_" + target);
     var len = data.length;
+    cout(88);
     for (var i = 0; i < len; i++) {
+        cout(66);
         KUR_Data.add(data[i], target);
     }
 };
@@ -513,7 +451,7 @@ KUR.Save = function (target, mode = "") { //保存json
     if (mode == "all") {
         var len = KUR_json_name.length - 1;
         for (var i = 0; i < len; i++) {
-            KUR.Json("save", {}, kur_json_name[i]);
+            KUR.Json("save", {}, KUR_json_name[i]);
         }
     } else {
         KUR.Json("save", {}, target);
@@ -632,7 +570,6 @@ function TIME_FILTER() { //滤镜设置
             };
         };
     } catch (e) {};
-
 };
 
 function TIME() { //时间控制
@@ -886,45 +823,13 @@ KUR_example = {};
 KUR_Data.copy = function (target) { //复制对象
     KUR_example = Object.assign(Object.create(Object.getPrototypeOf(target)), target);
 };
-KUR_Data.isempty = function (obj) {
-    return false;
-};
+
 KUR_Data.example = function (target) { //数据模板
     KUR_Data.copy(eval(KUR.to$(target) + "[config_3.example]"));
-    KUR_example.id = KUR.GetStaticLength(target) + eval("KUR_" + target + ".length");
+    KUR_example.id = KUR.GetStaticLength(target) + eval("KUR_EXTRA_DATA.Customize." + target + ".length");
     return KUR_example;
 };
-var KUR_DATA_ADD_item = {};
-KUR_Data.add = function (target = {}, to = "") { //向$dataxxx添加对象
-    if (!KUR_Data.isempty(target)) {
-        KUR_DATA_ADD_item = target;
-        eval(KUR.to$(to) + '[' + target.id + ']' + "=KUR_DATA_ADD_item;");
-        return true;
-    } else {
-        return false;
-    }
-};
-KUR_Data.create = function (target) { //获取基本数据模板
-    eval("KUR_" + target + ".push(KUR_Data.example(\"" + target + "\"));");
-    return eval("KUR_" + target + "[KUR_" + target + ".length-1];");
-};
-KUR_Data.CreateBasic = function (target) { //获取基本数据模板
-    return KUR_Data.create(target);
-};
-KUR_Data.Create_ = {};
-KUR_Data.Reload_ = function (target, mode = "") { //数据重新装载到$data
-    if (mode == "") {
-        KUR.reload(target);
-    } else if (mode == "all") {
-        var len = KUR_json_name.length;
-        for (var i = 0; i < len; i++) {
-            KUR.reload(KUR_json_name[i]);
-        };
-    };
-};
-KUR_Data.Save_ = function (target, mode = "") { //数据保存
-    KUR.Save(target, mode);
-};
+
 //各种数据创建
 KUR_Data.Basicconfig_3 = { //基本模板
     "item": {
@@ -960,21 +865,14 @@ KUR_Data.Basicconfig_3 = { //基本模板
         data: null
     },
 };
-KUR_Data.Create_.BasicTemplate = function (target) { //获取基本数据模板
+KUR_Data.BasicTemplate = function (target) { //获取基本数据模板
     KUR_Data.Basicconfig_3[target].data = KUR_Data.example(target);
     return KUR_JS.CreateObject(KUR_Data.Basicconfig_3[target]);
 };
 KUR_Data.CreateData = function (target) { //创建数据
     var types = target._typename;
-    eval("KUR_" + types + ".push(target.data);");
-    KUR_Data.Reload_(types);
-    KUR_Data.Save_(types); //如果想手动保存请删除这一行
-};
-KUR_JS._CreateData = function (target) { //创建数据
-    KUR_Data.CreateData(target);
-};
-KUR_JS._CreateBasicDataTemplate = function (target) { //获取基本数据模板
-    return KUR_Data.Create_.BasicTemplate(target);
+    eval("KUR_EXTRA_DATA.Customize." + types + ".push(target.data);");
+    KUR_Reload(types); //如果想手动加载请删除这一行
 };
 
 function KUR_Battle() {
@@ -1112,34 +1010,6 @@ KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) { //事件�
         }
     }
     KUR.prototype.EXE_S("EVENT_MAP();");
-};
-var ERROR_MESSAGE = 0;
-
-function CheckFile(file) { //文件检查
-    var BOOL;
-    fs.access("./KUR_DATA/" + file + ".json", fs.constants.F_OK, (err) => {
-        console.log(`${file} ${err ? (BOOL=false) : (BOOL=true)}`);
-        if (BOOL) {
-            return;
-        } else {
-            if (!ERROR_MESSAGE) {
-                cout("第一次运行此插件会自动创建必要文件.");
-            };
-            ERROR_MESSAGE++;
-            var fs_ = fs.createWriteStream("./KUR_DATA/" + file + ".json");
-            fs_.write("[]");
-            cout("文件" + file + ".json不存在,自动创建");
-        };
-    });
-
-};
-
-function FileCheck() { //文件检查
-    fs.mkdir("KUR_DATA");
-    var len = KUR_json_name.length;
-    for (var i = 0; i < len; i++) {
-        CheckFile(KUR_json_name[i]);
-    };
 };
 //----------------------------------------------------------------------------------------------
 //WINDOW
@@ -1328,14 +1198,60 @@ function AddTrait(ActorId, Code, DataId, Value) { //添加特性
         value: Value
     });
 };
+var KUR_EXTRA_DATA = $KURDATA;
+KUR_EXTRA_DATA.Customize = {};
+KUR_EXTRA_DATA.Customize.item = [];
+KUR_EXTRA_DATA.Customize.armor = [];
+KUR_EXTRA_DATA.Customize.skill = [];
+KUR_EXTRA_DATA.Customize.actor = [];
+KUR_EXTRA_DATA.Customize.weapon = [];
+KUR_EXTRA_DATA.Customize.state = [];
+KUR_EXTRA_DATA.Customize.enemy = [];
+KUR_EXTRA_DATA.Customize.troop = [];
+KUR_EXTRA_DATA.Customize.class = [];
 
-function LOAD_SAVE() { //储存至System
-    try {
-        if (typeof ($gameSystem.KUR) == "undefined") {
-            $gameSystem.KUR = {};
-        };
-    } catch (e) {};
+var _kur_DM_mscs = DataManager.makeSaveContents;
+DataManager.makeSaveContents = function () {
+    var contents_kur = _kur_DM_mscs.call(this);
+    contents_kur.KURDATA = $KURDATA;
+    contents_kur.KURDATA.Customize = KUR_EXTRA_DATA.Customize;
+    contents_kur.KURDATA.Customize.item = KUR_EXTRA_DATA.Customize.item;
+    contents_kur.KURDATA.Customize.armor = KUR_EXTRA_DATA.Customize.armor;
+    contents_kur.KURDATA.Customize.skill = KUR_EXTRA_DATA.Customize.skill;
+    contents_kur.KURDATA.Customize.actor = KUR_EXTRA_DATA.Customize.actor;
+    contents_kur.KURDATA.Customize.weapon = KUR_EXTRA_DATA.Customize.weapon;
+    contents_kur.KURDATA.Customize.state = KUR_EXTRA_DATA.Customize.state;
+    contents_kur.KURDATA.Customize.enemy = KUR_EXTRA_DATA.Customize.enemy;
+    contents_kur.KURDATA.Customize.troop = KUR_EXTRA_DATA.Customize.troop;
+    contents_kur.KURDATA.Customize.class = KUR_EXTRA_DATA.Customize.class;
+    return contents_kur;
 };
+var _kur_DM_escs = DataManager.extractSaveContents;
+DataManager.extractSaveContents = function (contents) {
+    _kur_DM_escs.call(this, contents);
+    $KURDATA = contents.KURDATA;
+    KUR_EXTRA_DATA.Customize = contents.KURDATA.Customize;
+    KUR_EXTRA_DATA.Customize.item = contents.KURDATA.Customize.item;
+    KUR_EXTRA_DATA.Customize.armor = contents.KURDATA.Customize.armor;
+    KUR_EXTRA_DATA.Customize.skill = contents.KURDATA.Customize.skill;
+    KUR_EXTRA_DATA.Customize.actor = contents.KURDATA.Customize.actor;
+    KUR_EXTRA_DATA.Customize.weapon = contents.KURDATA.Customize.weapon;
+    KUR_EXTRA_DATA.Customize.state = contents.KURDATA.Customize.state;
+    KUR_EXTRA_DATA.Customize.enemy = contents.KURDATA.Customize.enemy;
+    KUR_EXTRA_DATA.Customize.troop = contents.KURDATA.Customize.troop;
+    KUR_EXTRA_DATA.Customize.class = contents.KURDATA.Customize.class;
+    KUR_Reload();
+};
+
+var datalength = [];
+var _KUR_player = Game_Player.prototype.initialize;
+Game_Player.prototype.initialize = function () {
+    for (var i = 0; i < KUR_compare.length; i++) {
+        datalength.push(eval(KUR_compare[i] + ".length"));
+    };
+    _KUR_player.call(this);
+};
+
 var __trait = {
     code: 0,
     dataId: 0,
@@ -1389,27 +1305,10 @@ function AddParam(ActorId, paramId, value) { //属性操作
 };
 //----------------------------------------------------------------------------------------------
 //加载
-var count_load = 0;
-var __COPY = KUR_JS.CreateObject;
-
-function GAME_DATA_LOAD() { //数据加载
-    FileCheck();
-    ReadLength()
-    KUR.Json();
-    KUR.Load_json_length();
-    if (ERROR_MESSAGE) {
-        return GAME_DATA_LOAD();
-    };
-};
 var _kur_load_filter = 0;
 
 function START_LOAD() { //开始加载JSON
     if (!$gameParty.inBattle()) {
-        if (!count_load) {
-            GAME_DATA_LOAD();
-        };
-        KUR.prototype._sleep(config_3.LOAD_TIME, "KUR_Data.Reload_(\"\", \"all\");");
-        LOAD_SAVE();
         TIME_FILTER();
         if (!_kur_load_filter) {
             Set_Filter(0, 0, 0);
@@ -1427,65 +1326,34 @@ function KUR_FILTER_1() {
     } catch (error) {};
 };
 var KUR_LOAD_ = SceneManager.onSceneStart;
-var time_load = 0;
 SceneManager.onSceneStart = function () {
     if (!SceneManager._exiting) {
         KUR_FILTER_1();
     };
     KUR_LOAD_.call(this);
-    if (!config_3.ismobile) {
-        START_LOAD();
-    };
-    count_load++;
+    START_LOAD();
 };
-//----------------------------------------------------------
-var _databaseFiles = [{
-        name: '$dataItems',
-        src: 'data/Items.json'
-    },
-    {
-        name: '$dataArmors',
-        src: 'data/Armors.json'
-    },
-    {
-        name: '$dataSkills',
-        src: 'data/Skills.json'
-    },
-    {
-        name: '$dataActors',
-        src: 'data/Actors.json'
-    },
-    {
-        name: '$dataWeapons',
-        src: 'data/Weapons.json'
-    },
-    {
-        name: '$dataStates',
-        src: 'data/States.json'
-    },
-    {
-        name: '$dataEnemies',
-        src: 'data/Enemies.json'
-    },
-    {
-        name: '$dataTroops',
-        src: 'data/Troops.json'
-    },
-    {
-        name: '$dataClasses',
-        src: 'data/Classes.json'
-    }
-];
 
-var datalength = [];
-
-function ReadLength() { //读取数据文件
-    try {
-        for (var i = 0; i < _databaseFiles.length; i++) {
-            datalength.push(JSON.parse(fs.readFileSync(_databaseFiles[i].src).toString()).length);
+function KUR_Reload(target = "all") {
+    if (target = "all") {
+        for (var i = 0; i < KUR_json_name.length; i++) {
+            KUR_load(KUR_json_name[i]);
         };
-    } catch (error) {};
+    } else {
+        KUR_load(target);
+    };
 };
+
+function KUR_load(target) {
+    var len = KUR_EXTRA_DATA.Customize[target].length;
+    var len1 = datalength[KUR_json_name.indexOf(target)];
+    var j = 0;
+    for (var i = len1; i < len1 + len; i++) {
+        eval(KUR.to$(target) + '[' + i + ']=KUR_EXTRA_DATA.Customize[target][j];');
+        j++;
+    };
+};
+
 (function () { //读取debug文件
     try {
         $.getJSON("debug.json", function (data) {
@@ -1679,3 +1547,64 @@ let sleepFun = function (fun, time) {
         return fun();
     }, time);
 };
+//----------------------------------------------------------------------------------------------
+//符文系统
+function GetInput(title, str) {
+    return prompt(title, str);
+};
+Game_Interpreter.prototype.insertCommands = function (jsonCmds) {
+    var listCmds = this._list;
+    var listCount = listCmds.length;
+    var cuCmdIndex = this._index;
+    var cuCmdIndent = this._indent;
+    jsonCmds.forEach(function (e) {
+        e.indent += cuCmdIndent;
+    });
+    this._list = listCmds.slice(0, cuCmdIndex + 1).concat(jsonCmds).concat(listCmds.slice(cuCmdIndex + 1, listCount));
+}
+
+function KUR_insertCommands(jsonCmds) {
+    Game_Interpreter.prototype.insertCommands(jsonCmds);
+    return true;
+};
+var KUR_commands_template = {
+    "code": 0,
+    "indent": 0,
+    "parameters": []
+};
+class KUR_DATA_CMD {
+    constructor(name = String) {
+        this.name = name;
+        this.src = [];
+    };
+    add(codeId = 0, indent = 0, parameters = []) {
+        this.src.push(KUR_CreateCmdJson(codeId, indent, parameters));
+    };
+    exe() {
+        KUR_insertCommands(this.src);
+    };
+};
+
+function KUR_CreateCmdJson(codeId = 0, indent = 0, parameters = []) {
+    var new_ = KUR_JS.CreateObject(KUR_commands_template);
+    new_["code"] = codeId;
+    new_["indent"] = indent;
+    new_["parameters"] = parameters;
+    return new_;
+};
+var KUR_Game_Actor_initMembers = Game_Actor.prototype.initMembers;
+Game_Actor.prototype.initMembers = function () {
+    KUR_Game_Actor_initMembers.call(this);
+    this._kur_data = {};
+    this._kur_has_rune = 0;
+};
+
+function KUR_ShowActorCustomize(actor) {
+    if (!acotr._kur_has_rune) {
+        $gameMessage.add(message_norune);
+        return 0;
+    };
+    cout(actor);
+    return 1;
+};
+//----------------------------------------------------------------------------------------------
