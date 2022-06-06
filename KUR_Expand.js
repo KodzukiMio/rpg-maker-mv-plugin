@@ -236,12 +236,12 @@
 //         filter.bloomScale = 0.4;
 //         filter.threshold = 0.8;
 //         filter.brightness = cp[3];
-
+//     };
 const {
     constants
 } = require("buffer");
 
-//     };
+
 var params = PluginManager.parameters("KUR_Expand");
 var $KURDATA = {};
 //----------------------------------------------------------------------------------------------
