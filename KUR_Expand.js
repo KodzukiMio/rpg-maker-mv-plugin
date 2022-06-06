@@ -420,7 +420,7 @@ KUR.Find = function (target, items, start = 0) { //查找
 };
 
 KUR.GetStaticLength = function (target) { //获取数据原本长度
-    return datalength[KUR.Find(KUR_json_name, target)];
+    return _kur_datalength[KUR.Find(KUR_json_name, target)];
 };
 
 KUR.prototype._cout = { //偷懒用
@@ -1203,11 +1203,16 @@ DataManager.extractSaveContents = function (contents) {
     };
 };
 
-var datalength = [];
+var _kur_datalength = [];
+var _kur_event_length = 0;
+var _kur_read_data = 0;
 var _KUR_player = Game_Player.prototype.initialize;
 Game_Player.prototype.initialize = function () {
-    for (var i = 0; i < KUR_compare.length; i++) {
-        datalength.push(eval(KUR_compare[i] + ".length"));
+    if (!_kur_read_data) {
+        _kur_event_length = $dataCommonEvents.length;
+        for (var i = 0; i < KUR_compare.length; i++) {
+            _kur_datalength.push(eval(KUR_compare[i] + ".length"));
+        };
     };
     _KUR_player.call(this);
 };
@@ -1267,7 +1272,7 @@ function AddParam(ActorId, paramId, value) { //属性操作
 //加载
 var _kur_load_filter = 0;
 
-function START_LOAD() { //开始加载JSON
+function START_LOAD() {
     if (!$gameParty.inBattle()) {
         TIME_FILTER();
         if (!_kur_load_filter) {
@@ -1306,7 +1311,7 @@ function KUR_Reload(target = "all") {
 
 function KUR_load(target) {
     var len = KUR_EXTRA_DATA.Customize[target].length;
-    var len1 = datalength[KUR_json_name.indexOf(target)];
+    var len1 = _kur_datalength[KUR_json_name.indexOf(target)];
     var j = 0;
     for (var i = len1; i < len1 + len; i++) {
         eval(KUR.to$(target) + '[' + i + ']=KUR_EXTRA_DATA.Customize[target][j];');
@@ -1534,6 +1539,17 @@ var KUR_commands_template = {
     "indent": 0,
     "parameters": []
 };
+Game_Interpreter.prototype.command402 = function () { //重写了此函数
+    if (this._branch[this._indent] !== this._params[0]) {
+        this.skipBranch();
+    }
+    KUR_EventResourceRelease();
+    return true;
+};
+
+function KUR_EventResourceRelease() {
+    $dataCommonEvents.length = _kur_event_length;
+};
 class KUR_DATA_CMD {
     constructor() {
         this.src = [];
@@ -1542,8 +1558,9 @@ class KUR_DATA_CMD {
         this.src.push(KUR_CreateCmdJson(codeId, indent, parameters));
         return this;
     };
-    exe() {
+    exe(priority = 0) {
         var len = $dataCommonEvents.length;
+        this.add(355, priority, ["KUR_EventResourceRelease();"]);
         $dataCommonEvents.push(KUR_NewEvent(len, this.src));
         $gameTemp.reserveCommonEvent(len - 1);
     };
@@ -1592,16 +1609,16 @@ function KUR_ShowActorCustomize(actor, mode = 0) {
     if (len <= 0) {
         return $gameMessage.add(message_norune_);
     };
-    var names = ["退出"];
+    var names = ["关闭"];
     var ids = [];
     for (var i = 0; i < len; i++) {
         KUR_rune_find($KURDATA._rune[i]);
         names.push(__kur_out_variable.name);
         ids.push(__kur_out_variable.id);
     };
-    window_rune.add(118, 0, ["label"]).add(102, 0, [names, 0, 0, 2, 0]).add(402, 0, [0, "退出"]).add(115, 1, []);
+    window_rune.add(118, 0, ["label"]).add(102, 0, [names, 0, 0, 2, 0]).add(402, 0, [0, "关闭"]).add(115, 1, []);
     for (var j = 0; j < len; j++) {
-        window_rune.add(402, 0, [j + 1, names[j]]).add(355, 1, ["KUR_rune_find(" + $KURDATA._rune[j] + ");KUR_In_ShowActorCustomize(__kur_out_variable)"]);
+        window_rune.add(402, 0, [j + 1, names[j]]).add(355, 1, ["KUR_rune_find(" + $KURDATA._rune[j] + ");KUR_In_ShowActorCustomize(__kur_out_variable);"]);
     };
     window_rune.add(119, 0, ["label"]).exe();
     return 1;
