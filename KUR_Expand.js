@@ -237,10 +237,6 @@
 //         filter.threshold = 0.8;
 //         filter.brightness = cp[3];
 //     };
-const {
-    constants
-} = require("buffer");
-
 
 var params = PluginManager.parameters("KUR_Expand");
 var $KURDATA = {};
@@ -249,16 +245,16 @@ var $KURDATA = {};
 const message_plu_2 = "已存在,转化为";
 const message_plu_3 = "你获得的物品请在背包查看";
 const message_plu_4 = "获得";
-const message_plu_5 = "pt";
 const message_plu_6 = "角色";
-const message_norune = "你没有开启符文";
+const message_norune = "此角色没有开启符文系统";
+const message_norune_ = "你没有创建符文技能";
 
 function isMobile() {
     if (window.navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i)) {
         return true; // 移动端
     } else {
         return false; // PC端
-    }
+    };
 };
 //获取设置
 var config_3 = {
@@ -361,19 +357,19 @@ KUR_JS._Find = function (target, Attributes, value) { //查找符合target的Att
             try {
                 if (eval(tar + "[" + i + "]." + Attributes + " == " + value_)) {
                     RESULT.push(eval(tar + "[" + i + "]"));
-                }
+                };
             } catch (er) {};
-        }
+        };
     } catch (e) {
         return console.error(e);
     };
     return RESULT;
-}
+};
 //----------------------------------------------------------------------------------------------
 //其它
 function RandomNumber(max, min) { //随机数
     return Math.floor(Math.random() * (max - min)) + min
-}
+};
 //----------------------------------------------------------------------------------------------
 
 function to_number(str_array) { //字符串数组转换数字
@@ -393,10 +389,7 @@ KUR.prototype.GAMEDATA = {
 function KUR() {
     this.initialize.apply(this, arguments);
 };
-var fs;
-try {
-    fs = require("fs");
-} catch (e) {};
+
 //加载数据使用
 var KUR_compare = ["$dataItems", "$dataArmors", "$dataSkills", "$dataActors", "$dataWeapons", "$dataStates", "$dataEnemies", "$dataTroops", "$dataClasses"];
 var KUR_json_name = ["item", "armor", "skill", "actor", "weapon", "state", "enemy", "troop", "class"];
@@ -410,7 +403,7 @@ KUR.to$ = function (items) { //获取对应名称
         return KUR_json_name[f2];
     } else {
         return 0;
-    }
+    };
 };
 KUR.Find = function (target, items, start = 0) { //查找
     var len = target.length;
@@ -423,43 +416,13 @@ KUR.Find = function (target, items, start = 0) { //查找
         return -1;
     } else {
         return -1;
-    }
+    };
 };
 
 KUR.GetStaticLength = function (target) { //获取数据原本长度
     return datalength[KUR.Find(KUR_json_name, target)];
 };
 
-KUR.Load = function (target) { //加载json
-    var data = eval("KUR_" + target);
-    var len = data.length;
-    cout(88);
-    for (var i = 0; i < len; i++) {
-        cout(66);
-        KUR_Data.add(data[i], target);
-    }
-};
-var KUR_load_count = 0;
-KUR.reload = function (target) { //重加载json到$data
-    var tar = eval(KUR.to$(target));
-    if (tar) {
-        KUR.Load(target);
-        KUR_load_count++;
-    }
-};
-KUR.Save = function (target, mode = "") { //保存json
-    if (mode == "all") {
-        var len = KUR_json_name.length - 1;
-        for (var i = 0; i < len; i++) {
-            KUR.Json("save", {}, KUR_json_name[i]);
-        }
-    } else {
-        KUR.Json("save", {}, target);
-    }
-};
-KUR.Read = function (target) { //读取json
-    KUR.Json('r', {}, target);
-};
 KUR.prototype._cout = { //偷懒用
     c: function (message) {
         console.log(message);
@@ -506,18 +469,18 @@ KUR.prototype._sleep = function (str, time = 0, params = "", res = "") {
             count = 0;
             while (len--) {
                 res_ += res[count++].toString() + ",";
-            }
+            };
             res_ += "NONE=null";
-        }
+        };
         setTimeout("(function(" + str_ + "){" + str + "})(" + res_ + ")", time);
 
     } catch (e) {
         var E = e.toString();
         console.log(E);
         return E;
-    }
+    };
     return KUR.prototype.STORE;
-}
+};
 
 function GameCommand(command, args) { //插件命令
     return Game_Interpreter.prototype.pluginCommand(command, args);
@@ -535,10 +498,10 @@ function TIME_(time) { //时间检测
             TIME__S = true;
             return true;
         };
-    }
+    };
     TIME__S = false;
     return false;
-}
+};
 var KUR_t_h_ = 0;
 var MapID = 0;
 var KUR_TIME__ = DataManager.onLoad;
@@ -551,7 +514,6 @@ DataManager.onLoad = function (object) {
     };
 };
 var time_loadfirst = 150;
-var _kur_time_filter = 0;
 
 function TIME_FILTER() { //滤镜设置
     try {
@@ -596,20 +558,20 @@ SceneManager.update = function () {
     if (config_3.time) {
         TIME();
     };
-}
+};
 KUR.prototype.EXE_STATE = false;
 KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") { //偷梁换柱
     if (!KUR.prototype.EXE_STATE) {
         eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config_3.time) {TIME();};" + EVAL_FUNCTION + "}");
     } else {
         return;
-    }
+    };
     KUR.prototype.EXE_STATE = true;
-}
+};
 KUR.prototype.EXE_E = function () {
     KUR.prototype.EXE_STATE = false;
     eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config_3.time) {TIME();};}");
-}
+};
 //----------------------------------------------------------------------------------------------
 //抽奖
 var rad = {
@@ -625,13 +587,13 @@ var rad = {
                         return '$dataWeapons[Number(o)]'
                     case "c":
                         return '$dataArmors[Number(o)]'
-                }
-            }
+                };
+            };
             var a1 = parseInt(Math.random() * Object.keys(rad.ui[String(e)]).length + 1);
             var M = Math.floor((Math.random() * 100) + 1);
             var o = Object.keys(rad.ui[String(e)])[a1];
             Number(rad.ui[String(e)][String(o)]) >= M ? $gameParty.gainItem(eval(i(e)), 1, ) : M1(M); //TOOD
-        }
+        };
         switch (n) { //编号 
             case 1:
                 mo(m, "a")
@@ -649,7 +611,7 @@ var rad = {
                     var M = Math.floor((Math.random() * 100) + 1);
                     var o = Object.keys(rad.ui['d'])[a1];
                     Number(rad.ui['d'][String(o)]) >= M ? message_addactor(Number(o)) : $gameParty.gainGold(M);
-                }
+                };
 
                 function mad(o) {
                     var id = config_3.id1;
@@ -657,31 +619,29 @@ var rad = {
                     var p = parseInt((g.agi + g.atk + g.def + g.mdf + g.mat + g.mhp + g.mmp) / g.level);
                     $gameMessage.add(message_plu_6 + String($gameActors._data[o]._name) + message_plu_2 + " " + String($dataItems[id].name) + "x" + String(p));
                     $gameParty.gainItem($dataItems[id], p, )
-                }
+                };
 
                 function message_addactor(o) {
                     lis.indexOf(o) == -1 ? $gameParty.addActor(o) : mad(o);
-
-                }
+                };
                 break;
 
-        }
-
+        };
 
         function M1(M) {
             Ma += M;
             eval(config_3.M1);
-        }
+        };
 
         function mo(m, y) {
             for (i = 0; i < m; i++) {
                 q(y);
             };
             if (config_3.lottery) {
-                $gameMessage.add(message_plu_4 + Ma + message_plu_5);
+                $gameMessage.add(message_plu_4 + Ma + $dataSystem.currencyUnit);
                 $gameMessage.add(message_plu_3);
             };
-        }
+        };
     },
     ui: config_3_2,
 };
@@ -796,7 +756,7 @@ KUR_GAME.prototype._last_target_Skill_id = function () { //上一个使用技能
             return last._last_USE_Skill_Id;
         } else {
             return KUR_GAME.prototype._last_Actor_Skill().id;
-        }
+        };
     } catch (e) {};
 };
 var id = 0;
@@ -806,12 +766,6 @@ KUR_GAME.prototype._start = function (str) { //拓展集成
             Effect.prototype.UseSkillonState(KUR_GAME.prototype._last_target());
             break;
         case "star_event":
-            break;
-        case "onDamae":
-
-            break;
-        case "onDamge":
-
             break;
     };
 };
@@ -917,7 +871,7 @@ Effect.prototype.UseSkillonState = function (target) { //技能状态
     KUR_CODE(0, 1, target);
     if (skill_id == 0) {
         return;
-    }
+    };
     var st = false;
     var if_, add_;
     try {
@@ -925,7 +879,7 @@ Effect.prototype.UseSkillonState = function (target) { //技能状态
         add_ = to_number($dataSkills[skill_id].meta.SZN_add_state.split(' '));
     } catch (e) {
         return;
-    }
+    };
     var len_i = if_.length;
     var len_a = add_.length;
     var s = target.states();
@@ -934,21 +888,21 @@ Effect.prototype.UseSkillonState = function (target) { //技能状态
         for (j = 0; j < s_l; j++) {
             if (s[j].id == if_[i]) {
                 st = true;
-            }
-        }
-    }
+            };
+        };
+    };
     if (st) {
         for (i = 0; i < len_a; i++) {
             target.addState(add_[i]);
-        }
-    }
-}
+        };
+    };
+};
 //----------------------------------------------------------------------------------------------
 //(可删除)角色能级
 if (config_3.Eadd) {
     function szn_Eadd(actor) {
         return actor.agi + actor.atk + actor.def + actor.mdf + actor.mat + actor.mhp + actor.mmp
-    }
+    };
     var SZN_Window_drawActorSimpleStatus = Window_Base.prototype.drawActorSimpleStatus;
     Window_Base.prototype.drawActorSimpleStatus = function (actor, x, y, width) {
         SZN_Window_drawActorSimpleStatus.call(this, actor, x, y, width);
@@ -961,7 +915,6 @@ if (config_3.Eadd) {
         this.drawText("能级", x + window.innerWidth * 0.21875 - 50, y - 35, 48);
         this.resetTextColor();
         this.drawText(szn_Eadd(actor), x + window.innerWidth * 0.26171875 - 50, y - 35, window.innerWidth / 2, 'left');
-
     };
 }
 //----------------------------------------------------------------------------------------------
@@ -982,9 +935,7 @@ Game_BattlerBase.prototype.maxTp = function () {
 function KUR_EXE() {
     this.initialize.apply(this, arguments);
 };
-KUR_EXE.prototype.initialize = function () {
-
-};
+KUR_EXE.prototype.initialize = function () {};
 KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) { //检测位于(x,y)的事件ID
     var ID = KUR.prototype._getxy.MapEventId(x, y);
     if (!ID) {
@@ -994,9 +945,8 @@ KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) { //检测位于(x,y
             return true;
         } else {
             return false;
-        }
-
-    }
+        };
+    };
 };
 var EVENT_MAP = function () {};
 var EVENT_ID = 0;
@@ -1007,8 +957,8 @@ KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) { //事件�
             KUR.prototype.EXE_E();
             $gameTemp.reserveCommonEvent(eventid);
             return;
-        }
-    }
+        };
+    };
     KUR.prototype.EXE_S("EVENT_MAP();");
 };
 //----------------------------------------------------------------------------------------------
@@ -1080,8 +1030,7 @@ Window_MenuStatus.prototype.processOk = function () {
 //----------------------------------------------------------------
 function KUR_KAA() {
     this.initialize.apply(this, arguments);
-}
-
+};
 KUR_KAA.prototype = Object.create(Scene_MenuBase.prototype);
 KUR_KAA.prototype.constructor = KUR_KAA;
 
@@ -1118,7 +1067,7 @@ var KAA_THIS_ACTOR;
 
 function Window_kaa() {
     this.initialize.apply(this, arguments);
-}
+};
 
 Window_kaa.prototype = Object.create(Window_Selectable.prototype);
 Window_kaa.prototype.constructor = Window_kaa;
@@ -1137,7 +1086,7 @@ Window_kaa.prototype.setActor = function (actor) {
         this._actor = actor;
         KAA_THIS_ACTOR = this._actor;
         this.refresh();
-    }
+    };
 };
 
 Window_kaa.prototype.refresh = function () {
@@ -1147,7 +1096,7 @@ Window_kaa.prototype.refresh = function () {
         this.drawBlock1(lineHeight * 0);
         this.drawHorzLine(lineHeight * 1);
         this.drawParameters(48, lineHeight * 2);
-    }
+    };
 };
 
 Window_kaa.prototype.drawBlock1 = function (y) {
@@ -1199,6 +1148,7 @@ function AddTrait(ActorId, Code, DataId, Value) { //添加特性
     });
 };
 var KUR_EXTRA_DATA = $KURDATA;
+KUR_EXTRA_DATA._rune = [];
 KUR_EXTRA_DATA.Customize = {};
 KUR_EXTRA_DATA.Customize.item = [];
 KUR_EXTRA_DATA.Customize.armor = [];
@@ -1213,34 +1163,44 @@ KUR_EXTRA_DATA.Customize.class = [];
 var _kur_DM_mscs = DataManager.makeSaveContents;
 DataManager.makeSaveContents = function () {
     var contents_kur = _kur_DM_mscs.call(this);
-    contents_kur.KURDATA = $KURDATA;
-    contents_kur.KURDATA.Customize = KUR_EXTRA_DATA.Customize;
-    contents_kur.KURDATA.Customize.item = KUR_EXTRA_DATA.Customize.item;
-    contents_kur.KURDATA.Customize.armor = KUR_EXTRA_DATA.Customize.armor;
-    contents_kur.KURDATA.Customize.skill = KUR_EXTRA_DATA.Customize.skill;
-    contents_kur.KURDATA.Customize.actor = KUR_EXTRA_DATA.Customize.actor;
-    contents_kur.KURDATA.Customize.weapon = KUR_EXTRA_DATA.Customize.weapon;
-    contents_kur.KURDATA.Customize.state = KUR_EXTRA_DATA.Customize.state;
-    contents_kur.KURDATA.Customize.enemy = KUR_EXTRA_DATA.Customize.enemy;
-    contents_kur.KURDATA.Customize.troop = KUR_EXTRA_DATA.Customize.troop;
-    contents_kur.KURDATA.Customize.class = KUR_EXTRA_DATA.Customize.class;
+    try {
+        contents_kur.KURDATA = $KURDATA;
+        contents_kur.KURDATA._rune = $KURDATA._rune;
+        contents_kur.KURDATA.Customize = KUR_EXTRA_DATA.Customize;
+        contents_kur.KURDATA.Customize.item = KUR_EXTRA_DATA.Customize.item;
+        contents_kur.KURDATA.Customize.armor = KUR_EXTRA_DATA.Customize.armor;
+        contents_kur.KURDATA.Customize.skill = KUR_EXTRA_DATA.Customize.skill;
+        contents_kur.KURDATA.Customize.actor = KUR_EXTRA_DATA.Customize.actor;
+        contents_kur.KURDATA.Customize.weapon = KUR_EXTRA_DATA.Customize.weapon;
+        contents_kur.KURDATA.Customize.state = KUR_EXTRA_DATA.Customize.state;
+        contents_kur.KURDATA.Customize.enemy = KUR_EXTRA_DATA.Customize.enemy;
+        contents_kur.KURDATA.Customize.troop = KUR_EXTRA_DATA.Customize.troop;
+        contents_kur.KURDATA.Customize.class = KUR_EXTRA_DATA.Customize.class;
+    } catch (error) {
+        cout(error);
+    };
     return contents_kur;
 };
 var _kur_DM_escs = DataManager.extractSaveContents;
 DataManager.extractSaveContents = function (contents) {
     _kur_DM_escs.call(this, contents);
-    $KURDATA = contents.KURDATA;
-    KUR_EXTRA_DATA.Customize = contents.KURDATA.Customize;
-    KUR_EXTRA_DATA.Customize.item = contents.KURDATA.Customize.item;
-    KUR_EXTRA_DATA.Customize.armor = contents.KURDATA.Customize.armor;
-    KUR_EXTRA_DATA.Customize.skill = contents.KURDATA.Customize.skill;
-    KUR_EXTRA_DATA.Customize.actor = contents.KURDATA.Customize.actor;
-    KUR_EXTRA_DATA.Customize.weapon = contents.KURDATA.Customize.weapon;
-    KUR_EXTRA_DATA.Customize.state = contents.KURDATA.Customize.state;
-    KUR_EXTRA_DATA.Customize.enemy = contents.KURDATA.Customize.enemy;
-    KUR_EXTRA_DATA.Customize.troop = contents.KURDATA.Customize.troop;
-    KUR_EXTRA_DATA.Customize.class = contents.KURDATA.Customize.class;
-    KUR_Reload();
+    try {
+        $KURDATA = contents.KURDATA;
+        KUR_EXTRA_DATA._rune = contents.KURDATA._rune;
+        KUR_EXTRA_DATA.Customize = contents.KURDATA.Customize;
+        KUR_EXTRA_DATA.Customize.item = contents.KURDATA.Customize.item;
+        KUR_EXTRA_DATA.Customize.armor = contents.KURDATA.Customize.armor;
+        KUR_EXTRA_DATA.Customize.skill = contents.KURDATA.Customize.skill;
+        KUR_EXTRA_DATA.Customize.actor = contents.KURDATA.Customize.actor;
+        KUR_EXTRA_DATA.Customize.weapon = contents.KURDATA.Customize.weapon;
+        KUR_EXTRA_DATA.Customize.state = contents.KURDATA.Customize.state;
+        KUR_EXTRA_DATA.Customize.enemy = contents.KURDATA.Customize.enemy;
+        KUR_EXTRA_DATA.Customize.troop = contents.KURDATA.Customize.troop;
+        KUR_EXTRA_DATA.Customize.class = contents.KURDATA.Customize.class;
+        KUR_Reload();
+    } catch (error) {
+        cout(error);
+    };
 };
 
 var datalength = [];
@@ -1548,40 +1508,44 @@ let sleepFun = function (fun, time) {
     }, time);
 };
 //----------------------------------------------------------------------------------------------
-//符文系统
+//命令处理
 function GetInput(title, str) {
     return prompt(title, str);
 };
-Game_Interpreter.prototype.insertCommands = function (jsonCmds) {
-    var listCmds = this._list;
-    var listCount = listCmds.length;
-    var cuCmdIndex = this._index;
-    var cuCmdIndent = this._indent;
-    jsonCmds.forEach(function (e) {
-        e.indent += cuCmdIndent;
-    });
-    this._list = listCmds.slice(0, cuCmdIndex + 1).concat(jsonCmds).concat(listCmds.slice(cuCmdIndex + 1, listCount));
-}
-
-function KUR_insertCommands(jsonCmds) {
-    Game_Interpreter.prototype.insertCommands(jsonCmds);
-    return true;
+var KUR_CommandEvent = {
+    id: 0,
+    list: [],
+    name: "",
+    switchId: 1,
+    trigger: 0
 };
+
+function KUR_NewEvent(Id, List, Name = "", SwitchId = 1, Trigger = 0) {
+    KUR_CommandEvent.id = Id;
+    KUR_CommandEvent.list = List;
+    KUR_CommandEvent.name = Name;
+    KUR_CommandEvent.switchId = SwitchId;
+    KUR_CommandEvent.trigger = Trigger;
+    return Object.assign(Object.create(Object.getPrototypeOf(KUR_CommandEvent)), KUR_CommandEvent);
+};
+
 var KUR_commands_template = {
     "code": 0,
     "indent": 0,
     "parameters": []
 };
 class KUR_DATA_CMD {
-    constructor(name = String) {
-        this.name = name;
+    constructor() {
         this.src = [];
     };
     add(codeId = 0, indent = 0, parameters = []) {
         this.src.push(KUR_CreateCmdJson(codeId, indent, parameters));
+        return this;
     };
     exe() {
-        KUR_insertCommands(this.src);
+        var len = $dataCommonEvents.length;
+        $dataCommonEvents.push(KUR_NewEvent(len, this.src));
+        $gameTemp.reserveCommonEvent(len - 1);
     };
 };
 
@@ -1592,19 +1556,59 @@ function KUR_CreateCmdJson(codeId = 0, indent = 0, parameters = []) {
     new_["parameters"] = parameters;
     return new_;
 };
+//----------------------------------------------------------------------------------------------
+//符文系统
 var KUR_Game_Actor_initMembers = Game_Actor.prototype.initMembers;
 Game_Actor.prototype.initMembers = function () {
     KUR_Game_Actor_initMembers.call(this);
     this._kur_data = {};
     this._kur_has_rune = 0;
 };
+var __kur_out_variable;
 
-function KUR_ShowActorCustomize(actor) {
-    if (!acotr._kur_has_rune) {
-        $gameMessage.add(message_norune);
-        return 0;
+function KUR_rune_find(Id) {
+    for (var i = 0; i < $KURDATA.Customize.skill.length; i++) {
+        if ($KURDATA.Customize.skill[i].id == Id) {
+            __kur_out_variable = $KURDATA.Customize.skill[i];
+            return 1;
+        } else {
+            continue;
+        };
     };
-    cout(actor);
+    return 0;
+};
+//显示符文技能列表
+function KUR_ShowActorCustomize(actor, mode = 0) {
+    if (mode) {
+        SceneManager.pop();
+        SceneManager.pop();
+        if (!actor._kur_has_rune) {
+            $gameMessage.add(message_norune);
+            return 0;
+        };
+    };
+    var window_rune = new KUR_DATA_CMD();
+    var len = $KURDATA._rune.length;
+    if (len <= 0) {
+        return $gameMessage.add(message_norune_);
+    };
+    var names = ["退出"];
+    var ids = [];
+    for (var i = 0; i < len; i++) {
+        KUR_rune_find($KURDATA._rune[i]);
+        names.push(__kur_out_variable.name);
+        ids.push(__kur_out_variable.id);
+    };
+    window_rune.add(118, 0, ["label"]).add(102, 0, [names, 0, 0, 2, 0]).add(402, 0, [0, "退出"]).add(115, 1, []);
+    for (var j = 0; j < len; j++) {
+        window_rune.add(402, 0, [j + 1, names[j]]).add(355, 1, ["KUR_rune_find(" + $KURDATA._rune[j] + ");KUR_In_ShowActorCustomize(__kur_out_variable)"]);
+    };
+    window_rune.add(119, 0, ["label"]).exe();
     return 1;
 };
+//处理符文技能
+function KUR_In_ShowActorCustomize(target) {
+    alert(target.name + target.id);
+};
+
 //----------------------------------------------------------------------------------------------
