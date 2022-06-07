@@ -821,7 +821,9 @@ KUR_Data.Basicconfig_3 = { //基本模板
 };
 KUR_Data.BasicTemplate = function (target) { //获取基本数据模板
     KUR_Data.Basicconfig_3[target].data = KUR_Data.example(target);
-    return KUR_JS.CreateObject(KUR_Data.Basicconfig_3[target]);
+    var new_ = KUR_JS.CreateObject(KUR_Data.Basicconfig_3[target]);
+    new_.data._KUR_RUNE_LIST = "";
+    return new_;
 };
 KUR_Data.CreateData = function (target) { //创建数据
     var types = target._typename;
@@ -1607,7 +1609,8 @@ function KUR_ShowActorCustomize(actor, mode = 0) {
     var window_rune = new KUR_DATA_CMD();
     var len = $KURDATA._rune.length;
     if (len <= 0) {
-        return $gameMessage.add(message_norune_);
+        $gameMessage.add(message_norune_);
+        return 0;
     };
     var names = ["关闭"];
     var ids = [];
@@ -1625,7 +1628,17 @@ function KUR_ShowActorCustomize(actor, mode = 0) {
 };
 //处理符文技能
 function KUR_In_ShowActorCustomize(target) {
-    alert(target.name + target.id);
+    var data = GetInput(target.name, target._KUR_RUNE_LIST);
+    if (data == null) {
+        return 0;
+    } else {
+        if (confirm("确定修改吗?")) {
+            target._KUR_RUNE_LIST = data;
+            return 1;
+        } else {
+            return 0;
+        };
+    };
 };
 
 //----------------------------------------------------------------------------------------------
