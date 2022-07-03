@@ -965,7 +965,7 @@ KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) { //事件�
 };
 //----------------------------------------------------------------------------------------------
 //WINDOW
-var KUR_find_kaa;
+var KUR_find_kaa = [];
 
 function CheckNote_KAA(tag) { //检查note
     KUR_find_kaa = [];
@@ -1065,7 +1065,7 @@ KUR_KAA.prototype.onActorChange = function () {
     this._statusWindow.activate();
 };
 //------------------------------
-var KAA_THIS_ACTOR;
+var KAA_THIS_ACTOR = null;
 
 function Window_kaa() {
     this.initialize.apply(this, arguments);
@@ -1204,7 +1204,6 @@ DataManager.extractSaveContents = function (contents) {
         cout(error);
     };
 };
-
 var _kur_datalength = [];
 var _kur_event_length = 0;
 var _kur_read_data = 0;
@@ -1283,6 +1282,7 @@ function START_LOAD() {
             _kur_load_filter++;
         };
     };
+
 };
 
 function KUR_FILTER_1() {
@@ -1619,7 +1619,7 @@ function KUR_ShowActorCustomize(actor, mode = 0) {
         names.push(__kur_out_variable.name);
         ids.push(__kur_out_variable.id);
     };
-    window_rune.add(118, 0, ["label"]).add(102, 0, [names, 0, 0, 2, 0]).add(402, 0, [0, "关闭"]).add(115, 1, []);
+    window_rune.add(118, 0, ["label"]).add(102, 0, [names, 0, 0, 2, 0]).add(402, 0, [0, "关闭"]).add(355, 1, ["KUR_Reload(\"skill\");"]).add(115, 1, []);
     for (var j = 0; j < len; j++) {
         window_rune.add(402, 0, [j + 1, names[j]]).add(355, 1, ["KUR_rune_find(" + $KURDATA._rune[j] + ");KUR_In_ShowActorCustomize(__kur_out_variable);"]);
     };
