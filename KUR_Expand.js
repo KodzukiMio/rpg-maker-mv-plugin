@@ -1,9 +1,8 @@
 ﻿//=============================================================================
-// KUR_Expand.js	2022/06/06
-// Copyright (c) 2022 KURZER
+// KUR_Expand.js	2022/08/01
 //=============================================================================
 /*:
- * @plugindesc [v1.0] 拓展
+ * @plugindesc [v1.1] 拓展
  * @author KURZER
  * 
  * @param Error
@@ -17,7 +16,7 @@
  * @default 100
  * 
  * @param Prize ID
- * @desc 奖品ID
+ * @desc 角色抽奖鼓励奖物品ID
  * 默认值：76
  * @default 76
  * 
@@ -38,12 +37,12 @@
  * @default $gameParty.gainGold(M);
  * 
  * @param Energy Level
- * @desc 角色能级开关(此功能需要自行到JS调整参数)
+ * @desc 角色能级开关(此功能需要自行到JS 920行左右调整参数)
  * 默认值：0
  * @default 0
  * 
  * @param Time
- * @desc (MOG_TimeSystem与-ShoraLighting兼容)
+ * @desc 自动控制(让MOG_TimeSystem.js与-ShoraLighting.js混合使用)
  * 地图备注使用<NOLIGHT>关闭MOG的光照
  * 默认值：0
  * @default 0
@@ -59,7 +58,7 @@
  * @default 额外数据
  * 
  * @param WindowActorAttribute_max
- * @desc 每列最大变量长度个数
+ * @desc 每列最大变量个数
  * 默认值：9
  * @default 9
  * 
@@ -77,13 +76,14 @@
  * ============================================================================      
  * [如果不需要某些功能,请自行在插件注释掉]
  * ============================================================================
- * 注意:确保MV版本为1.6以上!!!
+ * 注意:确保MV版本为1.6及以上.
+ * 如果出现事件无法运行的情况,请把1151行左右的(KUR_EventResourceRelease();)删掉.
  * ============================================================================
- * 1.战斗受到伤害时触发状态(被攻击后先附加状态再计算伤害)
+ * 1.战斗受到伤害时触发状态(被攻击后先附加状态再计算伤害).
  * 
- * (注意:如果miss不会触发状态(就是触发onDamage函数时))
+ * (注意:如果miss不会触发状态).
  * 
- *      武器备注<SZN_Damage_State:id>
+ *      武器备注<KUR_Damage_State:id>
  *      id为状态ID
  * 
  * ----------------------------------------------------------------------------
@@ -91,17 +91,24 @@
  * 
  * 脚本:KUR_JS._Lottery(n, m);   //n类别,m次数
  * 使用前请先修改右侧的Prize ID与Encouragement Award
- * 消息提示请再JS内搜索 "const message_plu_" ... 自行修改.
- * n:1物品
- *   2武器
- *   3护甲
- *   4角色
+ * 消息提示请在JS内搜索 "const message_plu_" ... 自行修改.
+ * n: 1 ->物品
+ *    2 ->武器
+ *    3 ->护甲
+ *    4 ->角色
  * 
  * 使用方法:
- * 使用var xxx = KUR_JS._CreateProbabilityTable();创建概率表
- * 然后使用xxx.x[id] = number;来添加或修改概率
+ * 使用var xxx = KUR_JS._CreateProbabilityTable();创建概率表.
+ * 然后使用xxx.y[id] = number;来添加或修改概率.
+ * y:
+ *  a->物品
+ *  b->武器
+ *  c->护甲
+ *  d->角色
+ * (例如 xxx.a["42"]=100;)>>42号物品权重为100
  * 使用KUR_JS._LoadProbabilityTable(xxx);加载概率表,这里xxx必须是引用类型!!!
- * 可以自行创建json来保存概率表或者之间在编辑器的脚本里设置
+ * 然后使用KUR_JS._Lottery(n, m);来抽奖.
+ * 可以自行创建json来保存加载概率表或者直接在编辑器里的脚本去设置.
  * 
  * ----------------------------------------------------------------------------
  * 3.添加了角色能级(战斗力)在菜单栏
@@ -119,55 +126,78 @@
  * 被技能施加的对象,如果有状态...则添加状态...
  * 
  * ----------------------------------------------------------------------------
- * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人,敌群
+ * 7.在游戏里可以创建技能,物品,武器,角色,护甲,状态,敌人,敌群.
  * 
- * 使用前请修改基本模板ID(Universal template ID):ID为数据库中对应ID的数据
- * (可以使用config_3.example=number;)来修改模板ID
- * 使用var xxx = KUR_Data.BasicTemplate(target);来创建基本模板
- * target的值请使用KUR_JS._BasicName();来查询
- * 然后修改xxx的属性值
- * 最后使用KUR_Data.CreateData(xxx);来创建数据
+ * 使用前请修改基本模板ID(Universal template ID):ID 为 数据库中对应ID的项.
+ * (可以使用____config_3.example=number;)来修改模板ID
+ * 使用var xxx = KUR_Data.BasicTemplate(target);来创建基本模板.
+ * target的值请使用KUR_JS._BasicName();来查询.
+ * 然后修改xxx的属性值.
+ * 最后使用KUR_Data.CreateData(xxx);来创建数据.
  * 使用var xxx = KUR_JS._Find(target, Attributes, value);
  * 来查找符合target的Attributes属性==value的对象;
- * 函数返回一个数组
- * xxx为查找结果
- * (例如var f=KUR_JS._Find("item","name","生命药水");)
- * (f就是符合$dataItems[..].name=="生命药水"的对象集合)
- * 如果要修改数据,请使用$KURDATA.Customize来修改数据
- * 然后使用KUR_Reload(target);来重新加载数据(例如KUR_Reload("item");)
+ * 函数返回一个数组.
+ * xxx为查找结果.
+ * (例如var f = KUR_JS._Find("item","name","生命药水");).
+ * (f就是符合$dataItems[index].name == "生命药水" 的对象集合).
+ * 如果要修改数据,请使用$KURDATA.Customize来修改数据.
+ * 如有必要请使用KUR_Reload(target);来重新加载数据(例如KUR_Reload("item");).
  * 
- * 保姆教程:
+ * 使用教程:
+ * 
+ * 例如:
  * 
  * 我设置了Universal template ID为10
  * 所以模板ID变为了10
  * 我使用 var part_1 = KUR_Data.BasicTemplate("item");
- * (以数据库的10号物品为模板创建数据)
- * 然后 part_1.data.name = "ABCD";(物品名修改)
- *      part_1.data.iconIndex = 100;(物品图标修改)
+ * (以数据库的10号物品为模板创建数据).
+ * 然后 part_1.data.name = "ABCD";(物品名修改).
+ *      part_1.data.iconIndex = 100;(物品图标修改).
  * 最后 KUR_Data.CreateData(part_1);
- * 于是就在数据库添加了新的物品(id为数据库物品ID的最大值+1).
- * 我使用了 $gameParty.gainItem($dataItems[200],1,);(这里200是创建后自动生成的物品ID)
- * 于是我获得了名为"ABCD"的新物品
- * (技能,物品,武器,角色,护甲,状态,敌人,敌群)同理
+ * 于是就在游戏运行时动态添加了新的物品(id为数据库物品ID的最大值+1).
+ * 我使用了 $gameParty.gainItem($dataItems[200],1,);(这里200是创建后自动生成的物品ID).
+ * 于是我获得了名为"ABCD"的新物品.
+ * (技能,物品,武器,角色,护甲,状态,敌人,敌群)同理.
  * 
+ * 已知BUG:(解决中...)
+ * 1.如果使用了Drill的颜色插件(Drill_CoreOfColor),新增项的颜色都是黑色的.
+ * 2.如果你使用了某些具有类似功能的js,可能会不支持.但此功能与GT(ganfly)的随机..插件兼容.
+ * 解决:
+ * 1.单独使用Yanfly的颜色插件.(YEP_ItemCore) 或 不使用此功能.
+ * 2.不使用此功能.
  * ----------------------------------------------------------------------------
- * 8.技能&伤害 色调
+ * 8.技能伤害色调和Mp Hp颜色.
  * 
- * 使用这个可以改变技能色调
+ * 颜色查询:https://www.sojson.com/rgb.html
+ * 
+ * 改变技能伤害色调:
  * 
  * 角色或者敌人备注:
  *      <KUR_SkillHue:ID,hue1,hue2>
  *      <KUR_DamageHue:ID,hue>
  *      ID为技能ID
- *      hue1为技能对应动画的图像1色调
- *      hue2为技能对应动画的图像2色调
- *      hue为技能对应伤害图片的色调
+ *      hue1为技能对应动画的图像1色调.
+ *      hue2为技能对应动画的图像2色调.
+ *      hue为技能对应伤害图片的色调.
  * 
+ * 改变Mp Hp颜色:
+ * 
+ * 角色备注<KUR_Color:h1,h2,m1,m2>
+ * 
+ * h1 : HP的RGB颜色1.
+ * h2 : Hp的RGB颜色2.
+ * m1 : Mp的RGB颜色1.
+ * m2 : Mp的RGB颜色2.
+ * 
+ * 例如<KUR_Color:#FFFFFF,#000000,#FFF000,#000FFF>
+ * 
+ * 如果只单独需要HP或MP,另外两个空的填上0,一定要两个都填.
+ * 例如<KUR_Color:0,0,#FFF000,#000FFF>或<KUR_Color:#FFFFFF,#000000,0,0>
  * ---------------------------------------------------------------------------- 
- * 9.角色数据显示
+ * 9.角色数据显示.
  * 
- * 在角色备注使用以下格式来显示(注意:不允许空行!!!)
- * 在菜单栏对应的选项内查看显示
+ * 在角色备注使用以下格式来显示(注意:不允许空行!!!).
+ * 在菜单栏对应的选项内查看显示.
  * 
  * <KUR_KAA>
  * [name0,value0]
@@ -176,7 +206,7 @@
  * ...
  * </KUR_KAA>
  * 
- * 例如
+ * 例如:
  * <KUR_KAA>
  * ["金钱",$gameParty.gold()]
  * ["a"+"b",7+8]
@@ -190,46 +220,58 @@
  * 10.Code
  * 
  * 
- * I:战斗每次行动执行
+ * I:战斗每次行动执行.
  * 
- * 在角色备注里填入
+ * 在角色备注里填入:
  * 
  * <KUR_CODE[n]>
  * 
- * ...(使用 target 指代行动者)
+ * ...(使用 target 指代行动者).
  * 
  * </KUR_CODE[n]>
  * 
  * n = 0,1,2,3,4
  * 
- * 0:每次行动结束
- * 1:行动开始前
- * 2:行动开始后
- * 3:行动中
- * 4:行动结束前
+ * 0:每次行动结束.
+ * 1:行动开始前.
+ * 2:行动开始后.
+ * 3:行动中.
+ * 4:行动结束前.
  * 
  * 
- * II:每次使用技能/物品时执行
+ * II:每次使用技能/物品时执行.
  * 
- * 在备注里填入
+ * 在备注里填入:
  * 
  * <KUR_CODE>
- * ...(使用 target 指代目标)
+ * ...(使用 target 指代目标).
  * </KUR_CODE>
  * 
- * (可以使用$gameParty.inBattle()来区别战斗与非战斗)
+ * (可以使用$gameParty.inBattle()来区别战斗与非战斗).
  * 
  * [注意!请不要使用target_作为变量名!]
- * [使用请注意不是无效技能或物品,例如技能伤害为0,确保物品被使用!!!]
+ * [使用请注意不是无效技能或物品,例如技能伤害为0,确保物品或技能被成功使用!!!]
  * [例如使用TP+1]
  * ---------------------------------------------------------------------------- 
  * END.其它
  * 
- * 使用KUR_...来查看
+ * 使用KUR_...来查看.
+ * 
+ * 问题:
+ * 
+ * 1.什么时候功能7可以支持Drill_CoreOfColor.js?
+ * 答:打算在此实现Drill的功能.
+ * 
+ * 2.如何找到此插件来源?(20220731)
+ * https://rpg.blue/thread-490482-1-1.html
+ * 
+ * 更新日志:
+ * [v1.0]初版.
+ * [v1.1]添加了Hp与Mp的颜色功能.
  * 
  * ---------------------------------------------------------------------------- 
- * 如有BUG请反馈
- * QQ 3528609938
+ * 如有BUG请反馈.
+ * 此插件的部分命名有点不规范,如果与某些插件不兼容,请告诉我...
  * ----------------------------------------------------------------------------*/
 //  var blm = function(filter, cp) {
 //         filter.blur = cp[0];
@@ -238,7 +280,9 @@
 //         filter.brightness = cp[3];
 //     };
 
-var params = PluginManager.parameters("KUR_Expand");
+var Imported = Imported || {};
+Imported['KUR_Expand'] = true;
+var _kur_params = PluginManager.parameters("KUR_Expand");
 var $KURDATA = {};
 //----------------------------------------------------------------------------------------------
 //variables
@@ -246,8 +290,8 @@ const message_plu_2 = "已存在,转化为";
 const message_plu_3 = "你获得的物品请在背包查看";
 const message_plu_4 = "获得";
 const message_plu_6 = "角色";
-const message_norune = "此角色没有开启符文系统";
-const message_norune_ = "你没有创建符文技能";
+const message_norune = "此角色没有开启符文"; //功能未完成
+const message_norune_ = "你没有创建符文技能"; //功能未完成
 
 function isMobile() {
     if (window.navigator.userAgent.match(/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i)) {
@@ -257,24 +301,24 @@ function isMobile() {
     };
 };
 //获取设置
-var config_3 = {
-    id1: Number(params["Prize ID"]) || 76, //抽奖物品ID
-    Smaxtp: Number(params["MaxTp"]) || 100,
-    example: Number(params["Universal template ID"]) || 200, //通用模板ID
-    M1: Number(params["Encouragement Award"]) || "$gameParty.gainGold(M);", //鼓励奖
-    error: Number(params["Error"]) || 0,
-    Eadd: Number(params["Energy Level"]) || 0,
-    load_time: Number(params["LoadTime"]) || 1000,
-    time: Number(params["Time"]),
+var ____config_3 = {
+    id1: Number(_kur_params["Prize ID"]) || 76, //抽奖物品ID
+    Smaxtp: Number(_kur_params["MaxTp"]) || 100,
+    example: Number(_kur_params["Universal template ID"]) || 200, //通用模板ID
+    M1: Number(_kur_params["Encouragement Award"]) || "$gameParty.gainGold(M);", //鼓励奖
+    error: Number(_kur_params["Error"]) || 0,
+    Eadd: Number(_kur_params["Energy Level"]) || 0,
+    load_time: Number(_kur_params["LoadTime"]) || 1000,
+    time: Number(_kur_params["Time"]),
     hours: 65,
     time_stat: 0,
     ismobile: isMobile(),
-    lottery: Number(params["Prize State"]) || 0,
-    window_actor: Number(params["WindowActor"]),
-    window_actor_name: params["WindowActorAttribute"] || "额外属性",
-    window_actor_max: Number(params["WindowActorAttribute_max"]) || 9,
-    window_actor_x_offset: Number(params["WindowActorAttribute_x_offset"]),
-    window_actor_x_next_offset: Number(params["WindowActorAttribute_x_next_offset"]),
+    lottery: Number(_kur_params["Prize State"]) || 0,
+    window_actor: Number(_kur_params["WindowActor"]),
+    window_actor_name: _kur_params["WindowActorAttribute"] || "额外属性",
+    window_actor_max: Number(_kur_params["WindowActorAttribute_max"]) || 9,
+    window_actor_x_offset: Number(_kur_params["WindowActorAttribute_x_offset"]),
+    window_actor_x_next_offset: Number(_kur_params["WindowActorAttribute_x_next_offset"]),
     battle_light: 0,
 };
 var config_3_2 = { //默认概率表
@@ -308,7 +352,7 @@ var _config_3_1 = { //这个是模板,请不要动第一个元素.
 };
 
 function ERROR_THOROUGH(err) { //错误
-    if (config_3.error) {
+    if (____config_3.error) {
         return console.error(err);
     } else {
         return;
@@ -453,15 +497,15 @@ KUR.prototype._SetEventPosition = function (id, x, y) { //设置事件位置
 };
 KUR.prototype.STORE = [];
 //sleep(时间(毫秒),"执行代码块","参数名1,参数名2,...",[参数1,参数2])
-KUR.prototype._sleep = function (str, time = 0, params = "", res = "") {
+KUR.prototype._sleep = function (str, time = 0, _kur_params = "", res = "") {
     try {
-        if (params != "") {
-            params = params.split(',');
-            var len = params.length;
+        if (_kur_params != "") {
+            _kur_params = _kur_params.split(',');
+            var len = _kur_params.length;
             var str_ = "";
             var count = 0;
             while (len--) {
-                str_ += params[count++].toString() + ",";
+                str_ += _kur_params[count++].toString() + ",";
             }
             str_ += "NONE=null";
             len = res.length;
@@ -509,7 +553,7 @@ DataManager.onLoad = function (object) {
     KUR_TIME__.call(this, object);
     if (object === $dataMap) {
         try {
-            object.meta.NOLIGHT == true ? (config_3.time_stat = 1) : (config_3.time_stat = 0);
+            object.meta.NOLIGHT == true ? (____config_3.time_stat = 1) : (____config_3.time_stat = 0);
         } catch (e) {};
     };
 };
@@ -517,7 +561,7 @@ var time_loadfirst = 150;
 
 function TIME_FILTER() { //滤镜设置
     try {
-        var t_h = $gameVariables._data[config_3.hours];
+        var t_h = $gameVariables._data[____config_3.hours];
         if (TIME_(t_h)) {
             if ($gameMap.enableFilter(0, 1)) {
                 Set_Filter(1, 10, 0);
@@ -526,7 +570,7 @@ function TIME_FILTER() { //滤镜设置
         } else {
             if (!$gameMap.enableFilter(0, 1)) {
                 Set_Filter(1, 10, 0);
-                if (!config_3.time_stat) {
+                if (!____config_3.time_stat) {
                     Set_Filter(1, 0, 0);
                 };
             };
@@ -537,8 +581,8 @@ function TIME_FILTER() { //滤镜设置
 function TIME() { //时间控制
     try {
         if (KUR_t_h_ == time_loadfirst && !$gameParty.inBattle()) {
-            var t_h = $gameVariables._data[config_3.hours];
-            if (config_3.time_stat) {
+            var t_h = $gameVariables._data[____config_3.hours];
+            if (____config_3.time_stat) {
                 Set_Filter(0, 0, 0);
                 GameCommand("ambient", ["#232323", "200"]);
             } else if (TIME_(t_h)) {
@@ -555,14 +599,14 @@ function TIME() { //时间控制
 KUR.prototype.update = SceneManager.update;
 SceneManager.update = function () {
     KUR.prototype.update.call(this);
-    if (config_3.time) {
+    if (____config_3.time) {
         TIME();
     };
 };
 KUR.prototype.EXE_STATE = false;
 KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") { //偷梁换柱
     if (!KUR.prototype.EXE_STATE) {
-        eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config_3.time) {TIME();};" + EVAL_FUNCTION + "}");
+        eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (____config_3.time) {TIME();};" + EVAL_FUNCTION + "}");
     } else {
         return;
     };
@@ -570,7 +614,7 @@ KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") { //偷梁换柱
 };
 KUR.prototype.EXE_E = function () {
     KUR.prototype.EXE_STATE = false;
-    eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (config_3.time) {TIME();};}");
+    eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (____config_3.time) {TIME();};}");
 };
 //----------------------------------------------------------------------------------------------
 //抽奖
@@ -589,10 +633,10 @@ var rad = {
                         return '$dataArmors[Number(o)]'
                 };
             };
-            var a1 = parseInt(Math.random() * Object.keys(rad.ui[String(e)]).length + 1);
+            var a1 = parseInt(Math.random() * Object.keys(config_3_2[String(e)]).length);
             var M = Math.floor((Math.random() * 100) + 1);
-            var o = Object.keys(rad.ui[String(e)])[a1];
-            Number(rad.ui[String(e)][String(o)]) >= M ? $gameParty.gainItem(eval(i(e)), 1, ) : M1(M); //TOOD
+            var o = Object.keys(config_3_2[String(e)])[a1];
+            Number(config_3_2[String(e)][String(o)]) >= M ? $gameParty.gainItem(eval(i(e)), 1, ) : M1(M); //TOOD
         };
         switch (n) { //编号 
             case 1:
@@ -607,14 +651,14 @@ var rad = {
             case 4:
                 var lis = $gameParty._actors;
                 for (i = 0; i < m; i++) {
-                    var a1 = parseInt(Math.random() * Object.keys(rad.ui['d']).length + 1);
+                    var a1 = parseInt(Math.random() * Object.keys(config_3_2['d']).length);
                     var M = Math.floor((Math.random() * 100) + 1);
-                    var o = Object.keys(rad.ui['d'])[a1];
-                    Number(rad.ui['d'][String(o)]) >= M ? message_addactor(Number(o)) : $gameParty.gainGold(M);
+                    var o = Object.keys(config_3_2['d'])[a1];
+                    Number(config_3_2['d'][String(o)]) >= M ? message_addactor(Number(o)) : $gameParty.gainGold(M);
                 };
 
                 function mad(o) {
-                    var id = config_3.id1;
+                    var id = ____config_3.id1;
                     var g = $gameActors._data[o];
                     var p = parseInt((g.agi + g.atk + g.def + g.mdf + g.mat + g.mhp + g.mmp) / g.level);
                     $gameMessage.add(message_plu_6 + String($gameActors._data[o]._name) + message_plu_2 + " " + String($dataItems[id].name) + "x" + String(p));
@@ -630,33 +674,32 @@ var rad = {
 
         function M1(M) {
             Ma += M;
-            eval(config_3.M1);
+            eval(____config_3.M1);
         };
 
         function mo(m, y) {
             for (i = 0; i < m; i++) {
                 q(y);
             };
-            if (config_3.lottery) {
+            if (____config_3.lottery) {
                 $gameMessage.add(message_plu_4 + Ma + $dataSystem.currencyUnit);
                 $gameMessage.add(message_plu_3);
             };
         };
     },
-    ui: config_3_2,
 };
 //----------------------------------------------------------------------------------------------
-//战斗受到伤害前添加状态(在武器备注写: <SZN_Damage_State:状态ID> )
-function SZN_Damage_State_act_w(id) { //解析注释
+//战斗受到伤害前添加状态(在武器备注写: <KUR_Damage_State:状态ID> )
+function KUR_Damage_State_act_w(id) { //解析注释
     try {
-        var q = Number($gameActors.actor(id).weapons(0)[0].metaArray.SZN_Damage_State[0]);
+        var q = Number($gameActors.actor(id).weapons(0)[0].metaArray.KUR_Damage_State[0]);
         $gameActors.actor(id).addState(q);
     } catch (err) {};
 };
-var SZN_Game_Battler_onDamage = Game_Battler.prototype.onDamage;
+var KUR_Game_Battler_onDamage = Game_Battler.prototype.onDamage;
 Game_Battler.prototype.onDamage = function (value) { //受到伤害时
-    SZN_Game_Battler_onDamage.call(this, value);
-    SZN_Damage_State_act_w(this._actorId);
+    KUR_Game_Battler_onDamage.call(this, value);
+    KUR_Damage_State_act_w(this._actorId);
 };
 //----------------------------------------------------------------------------------------------
 //战斗拓展
@@ -763,7 +806,7 @@ var id = 0;
 KUR_GAME.prototype._start = function (str) { //拓展集成
     switch (str) {
         case "onDamage":
-            Effect.prototype.UseSkillonState(KUR_GAME.prototype._last_target());
+            KUR_Effect.prototype.UseSkillonState(KUR_GAME.prototype._last_target());
             break;
         case "star_event":
             break;
@@ -779,7 +822,7 @@ KUR_Data.copy = function (target) { //复制对象
 };
 
 KUR_Data.example = function (target) { //数据模板
-    KUR_Data.copy(eval(KUR.to$(target) + "[config_3.example]"));
+    KUR_Data.copy(eval(KUR.to$(target) + "[____config_3.example]"));
     KUR_example.id = KUR.GetStaticLength(target) + eval("KUR_EXTRA_DATA.Customize." + target + ".length");
     return KUR_example;
 };
@@ -828,7 +871,8 @@ KUR_Data.BasicTemplate = function (target) { //获取基本数据模板
 KUR_Data.CreateData = function (target) { //创建数据
     var types = target._typename;
     eval("KUR_EXTRA_DATA.Customize." + types + ".push(target.data);");
-    KUR_Reload(types); //如果想手动加载请删除这一行
+    var kc = eval("KUR_EXTRA_DATA.Customize." + types);
+    eval(KUR.to$(types))[target.data.id] = kc[kc.length - 1];
 };
 
 function KUR_Battle() {
@@ -865,10 +909,10 @@ Sprite_Damage.prototype.initialize = function () { //伤害颜色
 };
 //----------------------------------------------------------------------------------------------
 //效果
-function Effect() {
+function KUR_Effect() {
     this.initialize.apply(this, arguments);
 };
-Effect.prototype.UseSkillonState = function (target) { //技能状态
+KUR_Effect.prototype.UseSkillonState = function (target) { //技能状态
     var skill_id = KUR_GAME.prototype._get_use_skill().id; //TOOD
     KUR_CODE(0, 1, target);
     if (skill_id == 0) {
@@ -901,8 +945,8 @@ Effect.prototype.UseSkillonState = function (target) { //技能状态
 };
 //----------------------------------------------------------------------------------------------
 //(可删除)角色能级
-if (config_3.Eadd) {
-    function szn_Eadd(actor) {
+if (____config_3.Eadd) {
+    function KUR_Eadd(actor) {
         return actor.agi + actor.atk + actor.def + actor.mdf + actor.mat + actor.mhp + actor.mmp
     };
     var SZN_Window_drawActorSimpleStatus = Window_Base.prototype.drawActorSimpleStatus;
@@ -916,7 +960,7 @@ if (config_3.Eadd) {
         this.changeTextColor('#FF0000');
         this.drawText("能级", x + window.innerWidth * 0.21875 - 50, y - 35, 48);
         this.resetTextColor();
-        this.drawText(szn_Eadd(actor), x + window.innerWidth * 0.26171875 - 50, y - 35, window.innerWidth / 2, 'left');
+        this.drawText(KUR_Eadd(actor), x + window.innerWidth * 0.26171875 - 50, y - 35, window.innerWidth / 2, 'left');
     };
 }
 //----------------------------------------------------------------------------------------------
@@ -930,7 +974,7 @@ Window_Base.prototype.drawActorLevel = function (actor, x, y) { //修改等级�
 //----------------------------------------------------------------------------------------------
 //最大TP
 Game_BattlerBase.prototype.maxTp = function () {
-    return config_3.Smaxtp;
+    return ____config_3.Smaxtp;
 };
 //----------------------------------------------------------------------------------------------
 //特殊函数
@@ -1000,8 +1044,8 @@ function CheckNote_KAA(tag) { //检查note
 var KUR_Window_MenuCommand_addMainCommands = Window_MenuCommand.prototype.addMainCommands;
 Window_MenuCommand.prototype.addMainCommands = function () { //添加命令
     KUR_Window_MenuCommand_addMainCommands.call(this);
-    if (config_3.window_actor) {
-        this.addCommand(config_3.window_actor_name, "KUR_ACTOR_ATTRIBUTE", 1);
+    if (____config_3.window_actor) {
+        this.addCommand(____config_3.window_actor_name, "KUR_ACTOR_ATTRIBUTE", 1);
     };
 };
 //------------------------------
@@ -1124,15 +1168,15 @@ Window_kaa.prototype.drawParameters = function (x, y) { //绘制数据
         var kaa = KUR_find_kaa;
         var lines = 1;
         for (var i = 0; i < KUR_find_kaa.length; i++) {
-            if ((i % (config_3.window_actor_max * lines)) != i) {
+            if ((i % (____config_3.window_actor_max * lines)) != i) {
                 lines++;
             };
-            var y2 = y + lineHeight * (i % config_3.window_actor_max);
+            var y2 = y + lineHeight * (i % ____config_3.window_actor_max);
             var kaa_ = eval(kaa[i]);
             this.changeTextColor(kaa_.length > 2 ? kaa_[2] : this.systemColor());
-            this.drawText(kaa_[0], x + config_3.window_actor_x_offset * (lines - 1), y2, Graphics.boxWidth);
+            this.drawText(kaa_[0], x + ____config_3.window_actor_x_offset * (lines - 1), y2, Graphics.boxWidth);
             this.resetTextColor();
-            this.drawText(kaa_[1], x + config_3.window_actor_x_next_offset + (lines - 1) * config_3.window_actor_x_offset, y2, Graphics.boxWidth, 'left');
+            this.drawText(kaa_[1], x + ____config_3.window_actor_x_next_offset + (lines - 1) * ____config_3.window_actor_x_offset, y2, Graphics.boxWidth, 'left');
         };
     };
 };
@@ -1298,7 +1342,9 @@ SceneManager.onSceneStart = function () {
         KUR_FILTER_1();
     };
     KUR_LOAD_.call(this);
-    START_LOAD();
+    if (____config_3.time) {
+        START_LOAD();
+    };
 };
 
 function KUR_Reload(target = "all") {
@@ -1321,7 +1367,7 @@ function KUR_load(target) {
     };
 };
 
-(function () { //读取debug文件
+(function () { //读取debug文件 >> 自用
     try {
         $.getJSON("debug.json", function (data) {
             KUR.prototype.GAMEDATA.DEBUG = data;
@@ -1335,7 +1381,7 @@ var $kur = { //引用
     KUR_EXE,
     KUR_GAME,
     KUR_Data,
-    Effect,
+    KUR_Effect,
     KUR_JS,
 };
 //滤镜名
@@ -1515,7 +1561,7 @@ let sleepFun = function (fun, time) {
     }, time);
 };
 //----------------------------------------------------------------------------------------------
-//命令处理
+//命令处理>>使用MV自带的命令 解释?器.
 function GetInput(title, str) {
     return prompt(title, str);
 };
@@ -1541,7 +1587,7 @@ var KUR_commands_template = {
     "indent": 0,
     "parameters": []
 };
-Game_Interpreter.prototype.command402 = function () { //重写了此函数
+Game_Interpreter.prototype.command402 = function () { //重写了此函数,出问题请把这个去掉.
     if (this._branch[this._indent] !== this._params[0]) {
         this.skipBranch();
     }
@@ -1576,12 +1622,15 @@ function KUR_CreateCmdJson(codeId = 0, indent = 0, parameters = []) {
     return new_;
 };
 //----------------------------------------------------------------------------------------------
-//符文系统
+//符文>>未完成
 var KUR_Game_Actor_initMembers = Game_Actor.prototype.initMembers;
 Game_Actor.prototype.initMembers = function () {
     KUR_Game_Actor_initMembers.call(this);
     this._kur_data = {};
     this._kur_has_rune = 0;
+    this._kur_color1 = 0;
+    this._kur_color2 = 0;
+    this._kur_color_done = 0;
 };
 var __kur_out_variable;
 
@@ -1597,7 +1646,7 @@ function KUR_rune_find(Id) {
     return 0;
 };
 //显示符文技能列表
-function KUR_ShowActorCustomize(actor, mode = 0) {
+function KUR_ShowActorCustomize(actor, mode = 0) { //命令处理示例
     if (mode) {
         SceneManager.pop();
         SceneManager.pop();
@@ -1642,3 +1691,141 @@ function KUR_In_ShowActorCustomize(target) {
 };
 
 //----------------------------------------------------------------------------------------------
+//HP,MP颜色
+var _kur_equal_p_Bl = 0;
+var _kur_equal_p_content = "";
+
+function _kur_equal_p(item, index) {
+    var index_ = item.indexOf("KUR_Color");
+    _kur_equal_p_Bl = 0;
+    if (index_ != -1) {
+        _kur_equal_p_content = item.substr(index_ + 10, item.length - 2);
+        _kur_equal_p_content = _kur_equal_p_content.substring(0, _kur_equal_p_content.length - 1).split(',');
+        _kur_equal_p_Bl = 1;
+    };
+};
+
+function _kur_actor_eval_p(actor, window) {
+    if (!actor._kur_color_done) {
+        NoteTags(actor).forEach(_kur_equal_p);
+
+        actor._kur_color1 = _kur_equal_p_content[0] == '0' ? window.hpGaugeColor1() : _kur_equal_p_content[0];
+        actor._kur_color2 = _kur_equal_p_content[1] == '0' ? window.hpGaugeColor2() : _kur_equal_p_content[1];
+        actor._kur_color3 = _kur_equal_p_content[2] == '0' ? window.mpGaugeColor1() : _kur_equal_p_content[2];
+        actor._kur_color4 = _kur_equal_p_content[3] == '0' ? window.mpGaugeColor2() : _kur_equal_p_content[3];
+    };
+};
+//----------------------------------
+//插件支持
+if (Imported.YEP_AbsorptionBarrier) {
+    Window_Base.prototype.drawActorHp = function (actor, wx, wy, ww) {
+        ww = ww || 186;
+        var color1 = this.hpGaugeColor1();
+        var color2 = this.hpGaugeColor2();
+        if (actor.barrierPoints() > 0) {
+            ww = this.drawBarrierGauge(actor, wx, wy, ww);
+        };
+        this.changeTextColor(this.systemColor());
+        this.drawText(TextManager.hpA, wx, wy, 44);
+        var c1 = this.hpColor(actor);
+        var c2 = this.normalColor();
+        this.drawCurrentAndMax(actor.hp, actor.mhp, wx, wy, ww, c1, c2);
+    };
+};
+var SRD = SRD || {};
+if (!!SRD.BattleStatusCustomizer) {
+    Window_BattleStatusUpgrade.prototype.drawAllGauges = function () {
+        const actor = this._actor;
+        const boxWidth = this.contentsWidth();
+        const boxHeight = this.contentsHeight();
+        _kur_actor_eval_p(actor, this);
+        for (let i = 0; i <= this._gauges.length; i++) {
+            const info = SRD.BattleStatusCustomizer.gauges[this._gauges[i]];
+            if (info) {
+                var icur = 0;
+                var icurm = 0;
+                if (info.cur == "actor.hp") {
+                    icur = 1;
+                } else if (info.cur == "actor.mp") {
+                    icurm = 1;
+                };
+                if (info.absorb) {
+                    if (_kur_equal_p_Bl) {
+                        this.drawActorHp(actor, eval(info.x), eval(info.y), eval(info.width), eval(info.height), icur ? actor._kur_color1 : eval(info.color1), icur ? actor._kur_color2 : eval(info.color2), eval(info.back));
+                    } else {
+                        this.drawActorHp(actor, eval(info.x), eval(info.y), eval(info.width), eval(info.height), eval(info.color1), eval(info.color2), eval(info.back));
+                    };
+                    this._checkForRefresh.push([actor.hp, "actor.hp"]);
+                } else {
+                    if (_kur_equal_p_Bl) {
+                        if (icurm) {
+                            this.drawBasicGauge(eval(info.text), eval(info.x), eval(info.y), eval(info.width), eval(info.height), eval(info.cur), eval(info.max), icurm ? actor._kur_color3 : eval(info.color1), icurm ? actor._kur_color4 : eval(info.color2), eval(info.back), eval(info.cm));
+                        } else {
+                            this.drawBasicGauge(eval(info.text), eval(info.x), eval(info.y), eval(info.width), eval(info.height), eval(info.cur), eval(info.max), icur ? actor._kur_color1 : eval(info.color1), icur ? actor._kur_color2 : eval(info.color2), eval(info.back), eval(info.cm));
+                        };
+                    } else {
+                        this.drawBasicGauge(eval(info.text), eval(info.x), eval(info.y), eval(info.width), eval(info.height), eval(info.cur), eval(info.max), eval(info.color1), eval(info.color2), eval(info.back), eval(info.cm));
+                    };
+                    this._checkForRefresh.push([eval(info.cur), info.cur]);
+                };
+            };
+        };
+    };
+    if (Imported.YEP_AbsorptionBarrier) {
+        Window_BattleStatusUpgrade.prototype.drawActorHp = function (actor, wx, wy, ww, hh, col1, col2, bcol) {
+            ww = ww || 186;
+            var color1 = col1;
+            var color2 = col2;
+            if (actor.barrierPoints() > 0) {
+                ww = this.drawBarrierGauge(actor, wx, wy, ww, hh, col1, col2, bcol);
+            } else {
+                _kur_actor_eval_p(actor, this);
+                if (_kur_equal_p_Bl) {
+                    this.drawBasicGauge(TextManager.hpA, wx, wy, ww, hh, actor.hp, actor.mhp, actor._kur_color1, actor._kur_color2, bcol, true);
+                } else {
+                    this.drawBasicGauge(TextManager.hpA, wx, wy, ww, hh, actor.hp, actor.mhp, col1, col2, bcol, true);
+                };
+            };
+        };
+    };
+};
+//----------------------------------
+Window_Base.prototype.drawActorHp = function (actor, x, y, width) {
+    width = width || 186;
+    var color1 = this.hpGaugeColor1();
+    var color2 = this.hpGaugeColor2();
+    this.changeTextColor(this.systemColor());
+    this.drawText(TextManager.hpA, x, y, 44);
+    this.drawCurrentAndMax(actor.hp, actor.mhp, x, y, width, this.hpColor(actor), this.normalColor());
+};
+Window_Base.prototype.drawActorMp = function (actor, x, y, width) {
+    width = width || 186;
+    var color1 = this.mpGaugeColor1();
+    var color2 = this.mpGaugeColor2();
+    this.changeTextColor(this.systemColor());
+    this.drawText(TextManager.mpA, x, y, 44);
+    this.drawCurrentAndMax(actor.mp, actor.mmp, x, y, width, this.mpColor(actor), this.normalColor());
+};
+var _kur_Window_Base_prototype_drawActorHp = Window_Base.prototype.drawActorHp;
+Window_Base.prototype.drawActorHp = function (actor, x, y, width) {
+    width__ = width || 186;
+    _kur_actor_eval_p(actor, this);
+    if (_kur_equal_p_Bl) {
+        this.drawGauge(x, y, width__, actor.hpRate(), actor._kur_color1, actor._kur_color2);
+    } else {
+        this.drawGauge(x, y, width__, actor.hpRate(), this.hpGaugeColor1(), this.hpGaugeColor2());
+    };
+    _kur_Window_Base_prototype_drawActorHp.call(this, actor, x, y, width);
+};
+var _kur_Window_Base_prototype_drawActorMp = Window_Base.prototype.drawActorMp;
+Window_Base.prototype.drawActorMp = function (actor, x, y, width) {
+    width__ = width || 186;
+    _kur_actor_eval_p(actor, this);
+    if (_kur_equal_p_Bl) {
+        this.drawGauge(x, y, width__, actor.mpRate(), actor._kur_color3, actor._kur_color4);
+    } else {
+        this.drawGauge(x, y, width__, actor.mpRate(), this.mpGaugeColor1(), this.mpGaugeColor2());
+    };
+    _kur_Window_Base_prototype_drawActorHp.call(this, actor, x, y, width);
+};
+//----------------------------------
