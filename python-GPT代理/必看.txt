@@ -1,0 +1,7 @@
+代理设置:https://www.zhihu.com/question/587322263/answer/2919916984
+代理IP可在Windows设置-代理 查看
+0.安装python3.9
+1.先pip安装库
+2.不代理运行一次token.py再关闭
+3.代理运行chat.py再关闭
+4.修改chat.py里的apikey使用idle运行
