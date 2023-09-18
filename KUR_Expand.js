@@ -2383,7 +2383,7 @@ function ActorChat(id, fromId) {
     kur_Actor_chat_find.SetKeepContent(MakeGPTPrompt0(id));
     kur_Actor_chat_find.Create("user", MakeGPTprompt2(dat, $gameActors._data[fromId]._name));
     var mapinfo = GetThisMapGPTInfo();
-    kur_Actor_chat_find.SetPlusContent(MakeGPTPrompt1(mapinfo ? mapinfo : "无") + MakeGPTprompt3(GetActorGPTInfo($gameParty._actors[0])));
+    kur_Actor_chat_find.SetPlusContent(MakeGPTPrompt1(mapinfo ? mapinfo : "无") + MakeGPTprompt3(GetActorGPTInfo($gameParty._actors[id])));
     kur_Actor_chat_find.Submit();
     __chat_lock = true;
     Chat_temp = kur_Actor_chat_find;
