@@ -5,7 +5,7 @@ import json
 
 
 openai.api_key = "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"
-
+#密钥额度已用完
 port = 32155
 
 async def echo(websocket, path):
