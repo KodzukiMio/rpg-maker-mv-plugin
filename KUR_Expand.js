@@ -1275,6 +1275,11 @@ DataManager.makeSaveContents = function () { //数据存储
     try {
         contents_kur.KURDATA = $KURDATA;
         contents_kur.KURDATA._rune = $KURDATA._rune;
+        // for (let index = 0; index < contents_kur.KURDATA.Chat.length; index++) {
+        //     const element = contents_kur.KURDATA.Chat[index];
+        //     element.ReduceSize();
+        //     element.Wait(null);
+        // };
         contents_kur.KURDATA.Chat = KUR_EXTRA_DATA.Chat;
         contents_kur.KURDATA.Customize = KUR_EXTRA_DATA.Customize;
         contents_kur.KURDATA.Customize.item = KUR_EXTRA_DATA.Customize.item;
@@ -1408,7 +1413,7 @@ function START_LOAD() { //游戏开始加载
 function KUR_FILTER_1() { //滤镜
     try {
         if (!$gameTemp._shiftfilter.length) {
-            $gameTemp.createshiftfilter(300, 250, 1000, 00, 999999, 2);
+            $gameTemp.createshiftfilter(300, 250, 1000, 0, 999999, 2);
         };
     } catch (error) {};
 };
@@ -2088,7 +2093,7 @@ GPT_Actor = {
 var __flag_list = [];
 var __flag__callback = [];
 class ChatGPT {
-    constructor(IDname, strKeep_content = "", maxToken = 4000) {
+    constructor(IDname, strKeep_content = "", maxToken = 3500) { //本地计算方式有问题到4000token时只计算了3500个
         this.IDname = IDname; //别名
         this.ID = 0; //角色ID
         this.ToID = 0; //对话的对象ID
@@ -2123,6 +2128,32 @@ class ChatGPT {
         if (!this.Contains.length) return ("");
         return this.Contains[this.Contains.length - 1]["content"];
     };
+    // async ReduceSize() {
+    //     this.flag = false;
+    //     var sub_array = [];
+    //     if (this.keep_content.token == 0) {
+    //         this.keep_content.token = Number(await GPTsend(this.keep_content.content + this.keep_content.role, GPTtoken));
+    //     };
+    //     var tokencount = this.keep_content.token;
+    //     var _temp;
+    //     if (this.plus_content != "") {
+
+    //         _temp = CreateChatObject(GPT_Actor.system, this.plus_content);
+    //         _temp.token = Number(await GPTsend(_temp.plus_content + _temp.role, GPTtoken));
+    //         tokencount += _temp.token;
+    //     };
+    //     for (let i = this.Contains.length; i > 0; i--) {
+    //         const message = this.Contains[i - 1];
+    //         if (message.token == 0) {
+    //             message.token = Number(await GPTsend(message.content + message.role, GPTtoken));
+    //         };
+    //         tokencount += message.token;
+    //         if (tokencount > this.MAX_TOKEN) break;
+    //         sub_array.unshift(message);
+    //     };
+    //     this.Contains = sub_array;
+    //     this.flag = true;
+    // };
     async Submit() {
         this.flag = false;
         var sub_array = [];
@@ -2151,6 +2182,7 @@ class ChatGPT {
         };
         sub_array.unshift(this.keep_content);
         cout(sub_array); //debug
+        cout(tokencount); //debug
         try {
             this.temp = this.Contains.push(JSON.parse(await GPTsend(this.AllToString(sub_array), GPTchat)));
             this.flag = true;
@@ -2210,10 +2242,19 @@ async function GPTsend(msg, socketIo) {
 //角色检测对话
 if (_KUR_CONFIG.openai_) {
     _kur_loads_fun.push((function () {
-        KUR_AXY_Button("对话", 200, 20, 20, function () {
+        KUR_AXY_Button("对话", 1150, 20, 20, function () {
             KUR_ShowActorChat();
         }, "white", "black");
     }));
+    _kur_loads_fun.push((function () {
+        KUR_AXY_Button("查看本次对话消息", 1200, 20, 20, function () {
+            try {
+                $gameMessage.setScroll(2, false);
+                $gameMessage.add(insertLineBreaks(Chat_temp.LastMsg(), 40));
+            } catch (error) {};
+        }, "white", "black");
+    }));
+
 };
 
 var kur_Actor_chat_find = null;
@@ -2232,7 +2273,7 @@ function Stringformat(str, obj) {
 
 var __GPT_PROMPT = '我们来写一个对话小说,背景是rpg maker mv的游戏世界,请你扮演{actor_name0},用[{actor_name2}:]来开头,{actor_name1}的资料:[{actor_msg}],回答时保证无时无刻展现角色的性格特点,可使用修辞手法(比喻,夸张,排比,对偶,反复,设问,反问,引用,借代,反语,对比,形容词,拟声词,成语,生动形象).记住,你只能扮演{actor_name3}来回答我';
 //var __GPT_PROMPT_world = '奇幻世界场景信息:[{world_msg}],回答末尾可附加行动使用下列数组格式来回答(可多个数组连用):[action,param].(例如:[walk,x,y]),目前可用行动列表[walk,location],[battle,targetName],[action,param]'
-var __GPT_PROMPT_world = '场景信息:[{world_msg}],回答不用刻意联系场景,使用第一人称,中间可穿插你的面部表情,例如:你在做什么?(不满地看着你),括号里不能使用第一人称,不要使用会使json解析失败的符号,例如引号,且不超过160字.';
+var __GPT_PROMPT_world = '场景信息:[{world_msg}],回答不用刻意联系场景,使用第一人称,中间可穿插你的面部表情与心理感受,例如:你在做什么?(不满地看着你),括号里不能使用第一人称,不要使用会使json解析失败的符号,例如引号,且不超过160字.';
 var __GPT_ACTOR_MSG = "我扮演角色的资料:[{player_info}],";
 var __GPT_ASK = '[{B_name}:][{player_msg}].';
 
@@ -2365,7 +2406,7 @@ Game_Wait.__gpt__wait = function () {
         if (flag) {
             __flag_list.length = 0;
             for (let index = 0; index < __flag__callback.length; index++) {
-                __flag__callback[index]();
+                if (__flag__callback[index]) __flag__callback[index]();
             };
             __flag__callback.length = 0;
             return true;
@@ -2428,7 +2469,7 @@ function GPT_CHATSWAP(id1, id2) {
         };
     };
     if (swap1 && swap2) {
-        cout("请使用$gameParty.swapOrder()来交换角色,否则角色对话数据会混乱.")
+        cout("请使用$gameParty.swapOrder()来交换角色,否则角色对话数据会混乱.");
     } else if (swap2) {
         var temp = swap2.ID;
         swap2.ID = swap2.ToID;
