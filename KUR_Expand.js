@@ -1048,15 +1048,7 @@ function KUR_EXE() {
 KUR_EXE.prototype.initialize = function () {};
 KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) { //检测位于(x,y)的事件ID
     var ID = KUR.prototype._getxy.MapEventId(x, y);
-    if (!ID) {
-        return ID;
-    } else {
-        if (id == ID) {
-            return true;
-        } else {
-            return false;
-        };
-    };
+    return !ID ? ID : (id == ID);
 };
 var EVENT_MAP = function () {};
 var EVENT_ID = 0;
