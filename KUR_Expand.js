@@ -10,11 +10,6 @@
  * 默认值：0
  * @default 0
  * 
- * @param MaxTp
- * @desc 默认TP最大值
- * 默认值：100
- * @default 100
- * 
  * @param Prize ID
  * @desc 角色抽奖鼓励奖物品ID
  * 默认值：76
@@ -142,7 +137,7 @@
  * ----------------------------------------------------------------------------
  * 3.添加了角色能级(战斗力)在菜单栏
  * ----------------------------------------------------------------------------
- * 4.最大TP  在右侧参数修改
+ * 4.(已删除)
  * ----------------------------------------------------------------------------
  * 5.优化
  * 优化了等级显示
@@ -167,7 +162,7 @@
  * 来查找符合target的Attributes属性==value的对象;
  * 函数返回一个数组.
  * xxx为查找结果.
-a * (例如var f = KUR_JS._Find("item","name","生命药水");).
+ * (例如var f = KUR_JS._Find("item","name","生命药水");).
  * (f就是符合$dataItems[index].name == "生命药水" 的对象集合).
  * 如果要修改数据,请使用$KURDATA.Customize来修改数据.
  * 如有必要请使用KUR_Reload(target);来重新加载数据(例如KUR_Reload("item");).
@@ -289,7 +284,7 @@ a * (例如var f = KUR_JS._Find("item","name","生命药水");).
  * KUR_AXY_Button(text, x_, y_, fontsize_, fun = Void, color_ = 'white', backgroundcolor_ = 'rgba(0,0,0,0)')
  * 例如:
  * KUR_AXY_Button("CLICK",200,20,20,function(){alert("clicked!");},"yellow","green");
- * 在下[x,y]=[200,20]的位置绘制一个字体大小为20px名为CLICK的按钮(字体颜色黄,背景绿),点击按钮会触发函数(void -> 0).
+ * 在[x,y]=[200,20]的位置绘制一个字体大小为20px名为CLICK的按钮(字体颜色黄,背景绿),点击按钮会触发函数(void -> 0).
  * ---------------------------------------------------------------------------- 
  * END.其它
  * 
@@ -325,6 +320,9 @@ var Imported = Imported || {};
 Imported['KUR_Expand'] = true;
 var _kur_params = PluginManager.parameters("KUR_Expand");
 var $KURDATA = {};
+function KUR() {
+    this.initialize.apply(this, arguments);
+};
 //----------------------------------------------------------------------------------------------
 //variables
 const message_plu_2 = "已存在,转化为";
@@ -376,7 +374,7 @@ if (_KUR_CONFIG.save_time) {
                 $gameSystem.onBeforeSave();
                 DataManager.saveGame(1);
             };
-        } catch (error) {};
+        } catch (error) { };
     }), _KUR_CONFIG.save_time);
 };
 
@@ -461,7 +459,7 @@ KUR_JS._Find = function (target, Attributes, value) { //查找符合target的Att
                 if (eval(tar + "[" + i + "]." + Attributes + " == " + value_)) {
                     RESULT.push(eval(tar + "[" + i + "]"));
                 };
-            } catch (er) {};
+            } catch (er) { };
         };
     } catch (e) {
         return console.error(e);
@@ -487,10 +485,6 @@ function to_number(str_array) { //字符串数组转换数字
 KUR.prototype.GAMEDATA = {
     DEBUG: {},
     MESSAGE: {}
-};
-
-function KUR() {
-    this.initialize.apply(this, arguments);
 };
 
 //加载数据使用
@@ -613,7 +607,7 @@ DataManager.onLoad = function (object) {
     if (object === $dataMap) {
         try {
             object.meta.NOLIGHT == true ? (_KUR_CONFIG.time_stat = 1) : (_KUR_CONFIG.time_stat = 0);
-        } catch (e) {};
+        } catch (e) { };
     };
 };
 var time_loadfirst = 150;
@@ -634,7 +628,7 @@ function TIME_FILTER() { //滤镜设置
                 };
             };
         };
-    } catch (e) {};
+    } catch (e) { };
 };
 
 function TIME() { //时间控制
@@ -653,7 +647,7 @@ function TIME() { //时间控制
             KUR_t_h_ = 0;
         };
         KUR_t_h_++;
-    } catch (e) {};
+    } catch (e) { };
 };
 KUR.prototype.update = SceneManager.update;
 SceneManager.update = function () {
@@ -661,19 +655,6 @@ SceneManager.update = function () {
     if (_KUR_CONFIG.time) {
         TIME();
     };
-};
-KUR.prototype.EXE_STATE = false;
-KUR.prototype.EXE_S = function (EVAL_FUNCTION = "") { //偷梁换柱
-    if (!KUR.prototype.EXE_STATE) {
-        eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (_KUR_CONFIG.time) {TIME();};" + EVAL_FUNCTION + "}");
-    } else {
-        return;
-    };
-    KUR.prototype.EXE_STATE = true;
-};
-KUR.prototype.EXE_E = function () {
-    KUR.prototype.EXE_STATE = false;
-    eval("SceneManager.update=function(){KUR.prototype.update.call(this);if (_KUR_CONFIG.time) {TIME();};}");
 };
 //----------------------------------------------------------------------------------------------
 //抽奖
@@ -695,7 +676,7 @@ var KUR_rad = {
             var a1 = parseInt(Math.random() * Object.keys(KUR_config_table[String(e)]).length);
             var M = Math.floor((Math.random() * 100) + 1);
             var o = Object.keys(KUR_config_table[String(e)])[a1];
-            Number(KUR_config_table[String(e)][String(o)]) >= M ? $gameParty.gainItem(eval(i(e)), 1, ) : M1(M); //TOOD
+            Number(KUR_config_table[String(e)][String(o)]) >= M ? $gameParty.gainItem(eval(i(e)), 1,) : M1(M); //TOOD
         };
         switch (n) { //编号 
             case 1:
@@ -721,7 +702,7 @@ var KUR_rad = {
                     var g = $gameActors._data[o];
                     var p = parseInt((g.agi + g.atk + g.def + g.mdf + g.mat + g.mhp + g.mmp) / g.level);
                     $gameMessage.add(message_plu_6 + String($gameActors._data[o]._name) + message_plu_2 + " " + String($dataItems[id].name) + "x" + String(p));
-                    $gameParty.gainItem($dataItems[id], p, )
+                    $gameParty.gainItem($dataItems[id], p,)
                 };
 
                 function message_addactor(o) {
@@ -753,7 +734,7 @@ function KUR_Damage_State_act_w(id) { //解析注释
     try {
         var q = Number($gameActors.actor(id).weapons(0)[0].metaArray.KUR_Damage_State[0]);
         $gameActors.actor(id).addState(q);
-    } catch (err) {};
+    } catch (err) { };
 };
 var KUR_Game_Battler_onDamage = Game_Battler.prototype.onDamage;
 Game_Battler.prototype.onDamage = function (value) { //受到伤害时
@@ -859,7 +840,7 @@ KUR_GAME.prototype._last_target_Skill_id = function () { //上一个使用技能
         } else {
             return KUR_GAME.prototype._last_Actor_Skill().id;
         };
-    } catch (e) {};
+    } catch (e) { };
 };
 var id = 0;
 KUR_GAME.prototype._start = function (str) { //拓展集成
@@ -1037,31 +1018,15 @@ Window_Base.prototype.drawActorLevel = function (actor, x, y) { //修改等级�
 };
 //----------------------------------------------------------------------------------------------
 //最大TP
-Game_BattlerBase.prototype.maxTp = function () {
-    return _KUR_CONFIG.Smaxtp;
-};
 //----------------------------------------------------------------------------------------------
 //特殊函数
 function KUR_EXE() {
     this.initialize.apply(this, arguments);
 };
-KUR_EXE.prototype.initialize = function () {};
+KUR_EXE.prototype.initialize = function () { };
 KUR_EXE.prototype.DetectMapEventID_XY = function (x, y, id) { //检测位于(x,y)的事件ID
     var ID = KUR.prototype._getxy.MapEventId(x, y);
     return !ID ? ID : (id == ID);
-};
-var EVENT_MAP = function () {};
-var EVENT_ID = 0;
-KUR_EXE.prototype.MOVE_XY_ID = function (x, y, id, SET_ID, eventid) { //事件移动检测
-    EVENT_ID = SET_ID;
-    EVENT_MAP = function () {
-        if (!KUR_EXE.prototype.DetectMapEventID_XY(x, y, id)) {} else {
-            KUR.prototype.EXE_E();
-            $gameTemp.reserveCommonEvent(eventid);
-            return;
-        };
-    };
-    KUR.prototype.EXE_S("EVENT_MAP();");
 };
 //----------------------------------------------------------------------------------------------
 //WINDOW
@@ -1401,19 +1366,8 @@ function START_LOAD() { //游戏开始加载
         };
     };
 };
-
-function KUR_FILTER_1() { //滤镜
-    try {
-        if (!$gameTemp._shiftfilter.length) {
-            $gameTemp.createshiftfilter(300, 250, 1000, 0, 999999, 2);
-        };
-    } catch (error) {};
-};
 var KUR_LOAD_ = SceneManager.onSceneStart;
 SceneManager.onSceneStart = function () { //游戏开始加载
-    if (!SceneManager._exiting) {
-        KUR_FILTER_1();
-    };
     KUR_LOAD_.call(this);
     if (_KUR_CONFIG.time) {
         START_LOAD();
@@ -1421,7 +1375,7 @@ SceneManager.onSceneStart = function () { //游戏开始加载
     if (!KUR_Data.Screen.clickClient++) {
         try {
             KUR_AXY_TEXT();
-        } catch (error) {};
+        } catch (error) { };
     };
 };
 
@@ -1450,7 +1404,7 @@ function KUR_load(target) { //加载目标
         $.getJSON("debug.json", function (data) {
             KUR.prototype.GAMEDATA.DEBUG = data;
         });
-    } catch (e) {};
+    } catch (e) { };
 }());
 //----------------------------------------------------------------------------------------------
 var $kur = { //引用
@@ -1517,7 +1471,7 @@ function Set_Filter(mode_, id, mode = 0) { //滤镜设置
         } else {
             $gameMap.eraseFilterAfterMove(id);
         };
-    } catch (error) {};
+    } catch (error) { };
 };
 
 function KUR_CODE(tag, tag1 = 0, target = 0) { //字符串解析
@@ -1550,7 +1504,7 @@ function KUR_CODE(tag, tag1 = 0, target = 0) { //字符串解析
         } else {
             KUR_CODE_SKILL(target);
         };
-    } catch (error) {};
+    } catch (error) { };
 };
 
 function KUR_CODE_SKILL(target_) { //执行CODE
@@ -1784,46 +1738,49 @@ function KUR_In_ShowActorCustomize(target) {
 
 //----------------------------------------------------------------------------------------------
 //HP,MP颜色
-var _kur_equal_p_Bl = 0;
 var _kur_equal_p_content = "";
 
-function _kur_equal_p(item, index) {
+function _kur_equal_p(item, actor) {
     var index_ = item.indexOf("KUR_Color");
-    _kur_equal_p_Bl = 0;
     if (index_ != -1) {
+        actor._kur_color_hpmp = 1;
         _kur_equal_p_content = item.substr(index_ + 10, item.length - 2);
         _kur_equal_p_content = _kur_equal_p_content.substring(0, _kur_equal_p_content.length - 1).split(',');
-        _kur_equal_p_Bl = 1;
+        return 1;
     };
+    return 0;
 };
 
 function _kur_actor_eval_p(actor, window) {
     if (!actor._kur_color_done) {
-        NoteTags(actor).forEach(_kur_equal_p);
-
-        actor._kur_color1 = _kur_equal_p_content[0] == '0' ? window.hpGaugeColor1() : _kur_equal_p_content[0];
-        actor._kur_color2 = _kur_equal_p_content[1] == '0' ? window.hpGaugeColor2() : _kur_equal_p_content[1];
-        actor._kur_color3 = _kur_equal_p_content[2] == '0' ? window.mpGaugeColor1() : _kur_equal_p_content[2];
-        actor._kur_color4 = _kur_equal_p_content[3] == '0' ? window.mpGaugeColor2() : _kur_equal_p_content[3];
+        let tags = NoteTags(actor);
+        let flag = false;
+        for (let i = 0; i < tags.length; i++)flag |= _kur_equal_p(tags[i], actor);
+        if (flag) {
+            actor._kur_color1 = _kur_equal_p_content[0] == '0' ? window.hpGaugeColor1() : _kur_equal_p_content[0];
+            actor._kur_color2 = _kur_equal_p_content[1] == '0' ? window.hpGaugeColor2() : _kur_equal_p_content[1];
+            actor._kur_color3 = _kur_equal_p_content[2] == '0' ? window.mpGaugeColor1() : _kur_equal_p_content[2];
+            actor._kur_color4 = _kur_equal_p_content[3] == '0' ? window.mpGaugeColor2() : _kur_equal_p_content[3];
+        }
     };
 };
 //----------------------------------
 //插件支持
-if (Imported.YEP_AbsorptionBarrier) {
-    Window_Base.prototype.drawActorHp = function (actor, wx, wy, ww) {
-        ww = ww || 186;
-        var color1 = this.hpGaugeColor1();
-        var color2 = this.hpGaugeColor2();
-        if (actor.barrierPoints() > 0) {
-            ww = this.drawBarrierGauge(actor, wx, wy, ww);
-        };
-        this.changeTextColor(this.systemColor());
-        this.drawText(TextManager.hpA, wx, wy, 44);
-        var c1 = this.hpColor(actor);
-        var c2 = this.normalColor();
-        this.drawCurrentAndMax(actor.hp, actor.mhp, wx, wy, ww, c1, c2);
-    };
-};
+// if (Imported.YEP_AbsorptionBarrier) {
+//     Window_Base.prototype.drawActorHp = function (actor, wx, wy, ww) {
+//         ww = ww || 186;
+//         var color1 = this.hpGaugeColor1();
+//         var color2 = this.hpGaugeColor2();
+//         if (actor.barrierPoints() > 0) {
+//             ww = this.drawBarrierGauge(actor, wx, wy, ww);
+//         };
+//         this.changeTextColor(this.systemColor());
+//         this.drawText(TextManager.hpA, wx, wy, 44);
+//         var c1 = this.hpColor(actor);
+//         var c2 = this.normalColor();
+//         this.drawCurrentAndMax(actor.hp, actor.mhp, wx, wy, ww, c1, c2);
+//     };
+// };
 var SRD = SRD || {};
 if (!!SRD.BattleStatusCustomizer) {
     Window_BattleStatusUpgrade.prototype.drawAllGauges = function () {
@@ -1842,14 +1799,14 @@ if (!!SRD.BattleStatusCustomizer) {
                     icurm = 1;
                 };
                 if (info.absorb) {
-                    if (_kur_equal_p_Bl) {
+                    if (actor._kur_color_hpmp) {
                         this.drawActorHp(actor, eval(info.x), eval(info.y), eval(info.width), eval(info.height), icur ? actor._kur_color1 : eval(info.color1), icur ? actor._kur_color2 : eval(info.color2), eval(info.back));
                     } else {
                         this.drawActorHp(actor, eval(info.x), eval(info.y), eval(info.width), eval(info.height), eval(info.color1), eval(info.color2), eval(info.back));
                     };
                     this._checkForRefresh.push([actor.hp, "actor.hp"]);
                 } else {
-                    if (_kur_equal_p_Bl) {
+                    if (actor._kur_color_hpmp) {
                         if (icurm) {
                             this.drawBasicGauge(eval(info.text), eval(info.x), eval(info.y), eval(info.width), eval(info.height), eval(info.cur), eval(info.max), icurm ? actor._kur_color3 : eval(info.color1), icurm ? actor._kur_color4 : eval(info.color2), eval(info.back), eval(info.cm));
                         } else {
@@ -1863,16 +1820,17 @@ if (!!SRD.BattleStatusCustomizer) {
             };
         };
     };
-    if (Imported.YEP_AbsorptionBarrier) {
+    if (Imported.YEP_AbsorptionBarrier) {//TODO bug:不显示护盾
         Window_BattleStatusUpgrade.prototype.drawActorHp = function (actor, wx, wy, ww, hh, col1, col2, bcol) {
             ww = ww || 186;
             var color1 = col1;
             var color2 = col2;
             if (actor.barrierPoints() > 0) {
+                alert("555");
                 ww = this.drawBarrierGauge(actor, wx, wy, ww, hh, col1, col2, bcol);
             } else {
                 _kur_actor_eval_p(actor, this);
-                if (_kur_equal_p_Bl) {
+                if (actor._kur_color_hpmp) {
                     this.drawBasicGauge(TextManager.hpA, wx, wy, ww, hh, actor.hp, actor.mhp, actor._kur_color1, actor._kur_color2, bcol, true);
                 } else {
                     this.drawBasicGauge(TextManager.hpA, wx, wy, ww, hh, actor.hp, actor.mhp, col1, col2, bcol, true);
@@ -1882,43 +1840,36 @@ if (!!SRD.BattleStatusCustomizer) {
     };
 };
 //----------------------------------
-Window_Base.prototype.drawActorHp = function (actor, x, y, width) {
-    width = width || 186;
-    var color1 = this.hpGaugeColor1();
-    var color2 = this.hpGaugeColor2();
-    this.changeTextColor(this.systemColor());
-    this.drawText(TextManager.hpA, x, y, 44);
-    this.drawCurrentAndMax(actor.hp, actor.mhp, x, y, width, this.hpColor(actor), this.normalColor());
-};
-Window_Base.prototype.drawActorMp = function (actor, x, y, width) {
-    width = width || 186;
-    var color1 = this.mpGaugeColor1();
-    var color2 = this.mpGaugeColor2();
-    this.changeTextColor(this.systemColor());
-    this.drawText(TextManager.mpA, x, y, 44);
-    this.drawCurrentAndMax(actor.mp, actor.mmp, x, y, width, this.mpColor(actor), this.normalColor());
-};
 var _kur_Window_Base_prototype_drawActorHp = Window_Base.prototype.drawActorHp;
 Window_Base.prototype.drawActorHp = function (actor, x, y, width) {
-    width__ = width || 186;
-    _kur_actor_eval_p(actor, this);
-    if (_kur_equal_p_Bl) {
-        this.drawGauge(x, y, width__, actor.hpRate(), actor._kur_color1, actor._kur_color2);
-    } else {
-        this.drawGauge(x, y, width__, actor.hpRate(), this.hpGaugeColor1(), this.hpGaugeColor2());
-    };
     _kur_Window_Base_prototype_drawActorHp.call(this, actor, x, y, width);
+    width = width || 186;
+    _kur_actor_eval_p(actor, this);
+    if (actor._kur_color_hpmp) {
+        this.drawGauge(x, y, width, actor.hpRate(), actor._kur_color1, actor._kur_color2);
+    } else {
+        this.drawGauge(x, y, width, actor.hpRate(), this.hpGaugeColor1(), this.hpGaugeColor2());
+    };
+    this.changeTextColor(this.systemColor());
+
+    this.drawText(TextManager.hpA, x, y, 44);
+    var c1 = this.hpColor(actor);
+    var c2 = this.normalColor();
+    this.drawCurrentAndMax(actor.hp, actor.mhp, x, y, width, c1, c2);
 };
 var _kur_Window_Base_prototype_drawActorMp = Window_Base.prototype.drawActorMp;
 Window_Base.prototype.drawActorMp = function (actor, x, y, width) {
-    width__ = width || 186;
+    _kur_Window_Base_prototype_drawActorMp.call(this, actor, x, y, width);
+    width = width || 186;
     _kur_actor_eval_p(actor, this);
-    if (_kur_equal_p_Bl) {
-        this.drawGauge(x, y, width__, actor.mpRate(), actor._kur_color3, actor._kur_color4);
+    if (actor._kur_color_hpmp) {
+        this.drawGauge(x, y, width, actor.mpRate(), actor._kur_color3, actor._kur_color4);
     } else {
-        this.drawGauge(x, y, width__, actor.mpRate(), this.mpGaugeColor1(), this.mpGaugeColor2());
+        this.drawGauge(x, y, width, actor.mpRate(), this.mpGaugeColor1(), this.mpGaugeColor2());
     };
-    _kur_Window_Base_prototype_drawActorHp.call(this, actor, x, y, width);
+    this.changeTextColor(this.systemColor());
+    this.drawText(TextManager.mpA, x, y, 44);
+    this.drawCurrentAndMax(actor.mp, actor.mmp, x, y, width, this.mpColor(actor), this.normalColor());
 };
 //----------------------------------
 //AXY_TEXT 拓展按钮
@@ -1927,7 +1878,6 @@ var KUR_BOX = [];
 function KUR_distance(size, length, x, y, cx, cy) {
     return (cx >= x) && (cx <= (x + size * length)) && (cy >= y) && (cy <= (y + size));
 };
-
 function KUR_AXY_Button(text, x_, y_, fontsize_, fun = Void, color_ = 'white', backgroundcolor_ = 'rgba(0,0,0,0)') {
     AXY_Text.show({
         x: x_,
@@ -2056,13 +2006,14 @@ if (!_KUR_CONFIG.allowError) {
 var __GPTsocket;
 
 function ReConnect(port, pfn) {
+    return __GPTsocket;//暂时中断此功能开发,明明都捕获异常了居然还会报错???
     try {
         __GPTsocket = new WebSocket('ws://localhost:' + port);
         __GPTsocket.onopen = function (event) {
             console.log('Connected to server');
         };
         __GPTsocket.onmessage = pfn
-    } catch (error) {};
+    } catch (error) { };
     return __GPTsocket;
 };
 
@@ -2243,7 +2194,7 @@ if (_KUR_CONFIG.openai_) {
             try {
                 $gameMessage.setScroll(2, false);
                 $gameMessage.add(insertLineBreaks(Chat_temp.LastMsg(), 40));
-            } catch (error) {};
+            } catch (error) { };
         }, "white", "black");
     }));
 
@@ -2361,7 +2312,7 @@ function ActorChat(id, fromId) {
                 kur_Actor_chat_find = ActorChat.List[i];
             };
         };
-    } catch (error) {};
+    } catch (error) { };
     if (kur_Actor_chat_find == null) {
         var ch = new ChatGPT(String(id), MakeGPTPrompt0(id));
         ch.ID = id;
@@ -2477,3 +2428,9 @@ Game_Party.prototype.swapOrder = function (index1, index2) {
     GPT_CHATSWAP(this._actors[index1], this._actors[index2]);
 };
 //-------------------------------------------------------------------------------------------
+function setInitLevel(tag) {
+    const regex = /<kur_init_level:\s*(.*?)\s*>/g;//<kur_init_level:lvl>//设置初始等级
+    let match, value = null;
+    while ((match = regex.exec(tag)) !== null) value = match[1];
+    return value;
+}
