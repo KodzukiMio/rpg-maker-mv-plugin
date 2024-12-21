@@ -6,21 +6,30 @@
  * @plugindesc Kurzer 3D Battle Engine Core [20240722]
  * @author Kurzer
  * @help
- * Kurzer的3D战斗引擎核心.
- * 无需引入任何库,无需任何前置插件,没有任何图片资源需求.
- * 兼容200+不同的插件,高度兼容性.
- * 只在在战斗界面下工作.
+ * 该插件为 RPG Maker MV 提供一个 3D 战棋核心,无需任何外部库或前置插件.
  * 
+ * 主要功能:
+ * 摄像机控制:通过键盘控制摄像机的移动和旋转.
+ * 网格系统:战斗场景基于网格系统,角色在网格上移动.
+ * 角色定位和移动:支持角色在 3D 空间中的定位和移动.
+ * 面向目标:角色可以面向特定的目标.
+ * 移动点系统:角色的移动受到移动点数的限制.
+ * 
+ * 性能测试:
+ * 只在在战斗界面下工作,常规场景下不引入额外开销.
  * 50s性能监控,插件总开销时间(Self time):
- * YEP_CoreEngine 557.2ms 平均(11ms->CPU@4200mhz)
- * Olivia_BattleImpact 244.2ms 平均(4.4ms->CPU@4200mhz)
- * KUR_BEC 201ms 平均(4ms->4200mhz) (20ms->CPU@1050mhz)
+ * YEP_CoreEngine 557.2ms 平均(11ms->CPU-4200mhz)
+ * Olivia_BattleImpact 244.2ms 平均(4.4ms->CPU-4200mhz)
+ * KUR_BEC 201ms 平均(4ms->4200mhz) (20ms->CPU-1050mhz)
+ * 但实际游戏中(CPU-4.2Ghz)与200+插件一起使用,战斗界面平均每秒帧生成时间不到3ms.
+ * 根据drill_up的标准属于<高消耗>插件,具体性能表现可能因硬件配置和游戏内容而异.
  * 
- * 实际游戏中(CPU@4.2Ghz)与200+插件一起战斗界面平均每秒帧生成时间不到2ms
+ * 兼容性:
+ * 该插件的设计目标是与其他插件尽可能兼容,并已通过部分主流插件的兼容性测试.
+ * 由于 RPG Maker MV 的插件生态系统复杂，无法保证与所有插件完全兼容.
+ * RMMV的Bitmap只能用Canvas-2D,为了兼容性无法改动底层Bitmap使用webgl,所以只能CPU硬算.
  * 
- * 注意:根据drill_up的标准属于<高消耗>插件.
  */
-//Bitmap貌似只能用c2d用不了webgl,只能cpu硬算...
 "use strict";
 var Imported = Imported || {};
 Imported.KUR_BEC = true;
@@ -225,21 +234,137 @@ var KUR = KUR || {};
   KUR.getBattleActor = function () {
     return BattleManager.actor();
   }
-  KUR.createBaseVertex = function () {//TODO 游戏object的绘制
-
+  KUR.createVertex = function (face = [0, 1, 0], vertex = [0, 0, 0, 0, 0, 0, 0, 0, 0], parent) {
+    let vtx = new Int32Array(12);
+    vtx = [face[0], face[1], face[2], vertex[0], vertex[1], vertex[2], vertex[3], vertex[4], vertex[5], vertex[6], vertex[7], vertex[8]];
+    return { vertex: vtx, root: parent, depth: 0,color:"white" };
   };
-  KUR.BaseDrawObject = class {
+  KUR.calculateSortDepth = function (cameraPosition, vertex) {
+    const v1x = vertex[3];
+    const v1y = vertex[4];
+    const v1z = vertex[5];
+    const v2x = vertex[6];
+    const v2y = vertex[7];
+    const v2z = vertex[8];
+    const v3x = vertex[9];
+    const v3y = vertex[10];
+    const v3z = vertex[11];
+    const centerX = (v1x + v2x + v3x) / 3;
+    const centerY = (v1y + v2y + v3y) / 3;
+    const centerZ = (v1z + v2z + v3z) / 3;
+    const dx = centerX - cameraPosition[0];
+    const dy = centerY - cameraPosition[1];
+    const dz = centerZ - cameraPosition[2];
+    return dx * dx + dy * dy + dz * dz;
+  };
+  KUR.group = class {
     constructor(parent) {
-      this.parent = parent;
-      this.Vertex = [];
-    }
-  }
-  KUR.DarwObject = class {
-    constructor(parent) {
-      this.parent = parent;
       this.position = [0, 0, 0];
-      this.child = [];
-      this.model = [];
+      this.scale = [1, 1, 1];
+      this.rotate = [0, 0, 0];//rx,ry,rz
+      this.hidden = 0;
+      this.faces = [];
+      this.parent = parent;
+    }
+    getFaces(fc) {
+      return [[fc[3] + this.position[0], fc[4] + this.position[1], fc[5] + this.position[2]],
+      [fc[6] + this.position[0], fc[7] + this.position[1], fc[8] + this.position[2]],
+      [fc[9] + this.position[0], fc[10] + this.position[1], fc[11] + this.position[2]]]
+    }
+    check(pt, depth) {
+      if (depth > this.parent.zdepth) return (pt[0] < 0 || pt[0] > 1 || pt[1] < 0 || pt[1] > 1);
+      return (pt[0] <= 0 || pt[0] >= 1 || pt[1] <= 0 || pt[1] >= 1);
+    }
+    clipPolygonToRectangle(points) {
+      const TOLERANCE = 1e-9;
+      let outputList = points;
+      for (let edge of [[0, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 0, 0]]) {
+        let inputList = outputList;
+        outputList = [];
+        if (inputList.length === 0) break;
+        let S = inputList[inputList.length - 1];
+        for (let E of inputList) {
+          if (this.isInside(E, edge, TOLERANCE)) {
+            if (!this.isInside(S, edge, TOLERANCE)) outputList.push(this.computeIntersection(S, E, edge, TOLERANCE));
+            outputList.push(E);
+          } else if (this.isInside(S, edge, TOLERANCE)) {
+            outputList.push(this.computeIntersection(S, E, edge, TOLERANCE));
+          }
+          S = E;
+        }
+      }
+      return outputList;
+    }
+
+    isInside(point, edge, TOLERANCE) {
+      return (
+        (edge[2] - edge[0]) * (point[1] - edge[1]) -
+        (edge[3] - edge[1]) * (point[0] - edge[0]) >= -TOLERANCE
+      );
+    }
+    computeIntersection(S, E, edge, TOLERANCE) {
+      let dc = [edge[2] - edge[0], edge[3] - edge[1]];
+      let dp = [S[0] - E[0], S[1] - E[1]];
+      let n1 = edge[0] * edge[3] - edge[1] * edge[2];
+      let n2 = S[0] * E[1] - S[1] * E[0];
+      let denominator = dc[0] * dp[1] - dc[1] * dp[0];
+      if (Math.abs(denominator) < TOLERANCE) return [(S[0] + E[0]) / 2, (S[1] + E[1]) / 2];
+      let n3 = 1.0 / denominator;
+      return [
+        (n1 * dp[0] - n2 * dc[0]) * n3,
+        (n1 * dp[1] - n2 * dc[1]) * n3
+      ];
+    }
+    inView(v3, fov = Math.PI / 2) { // 默认FOV为90°
+      const p = this.parent._position;
+      const v2 = this.parent.face_vec;
+      const v1 = [v3[0] - p[0], v3[1] - p[1], v3[2] - p[2]];
+      const d1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1] + v1[2] * v1[2]);
+      if (d1 === 0) return false;
+      const v1_normalized = [v1[0] / d1, v1[1] / d1, v1[2] / d1];
+      const d2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1] + v2[2] * v2[2]);
+      if (d2 === 0) return false;
+      const v2_normalized = [v2[0] / d2, v2[1] / d2, v2[2] / d2];
+      const cosTheta = v1_normalized[0] * v2_normalized[0] +
+        v1_normalized[1] * v2_normalized[1] +
+        v1_normalized[2] * v2_normalized[2];
+      const clampedCosTheta = Math.max(-1, Math.min(1, cosTheta));
+      const fovThreshold = Math.cos(fov); // FOV 的全角(这里fov比较特殊)
+      return clampedCosTheta >= fovThreshold;
+    }
+    drawTriangle(face, color) {//args为3个顶点
+      let points = [0, 0, 0];
+      let pt = this.getFaces(face.vertex);
+      let flag = 0;
+      for (let i = 0; i < 3; ++i) {
+        if (!this.inView(pt[i], Math.PI * this.parent._fov / 180) || !(points[i] = this.parent.camera(pt[i]))) return;
+        if (!flag && this.check(points[i], face.depth)) ++flag;
+      }
+      if (flag) {
+        if (flag == 3) return;
+        points = this.clipPolygonToRectangle(points);
+        if (points.length < 3) return;
+      }
+      for (let i = 0; i < points.length; ++i) {
+        if (this.check(points[i], face.depth)) return;
+        points[i][0] *= this.parent.width;
+        points[i][1] *= this.parent.height;
+      }
+      this.parent.ctx.save();
+      const ctx = this.parent.ctx;
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; ++i) {
+        ctx.lineTo(points[i][0], points[i][1]);
+      }
+      ctx.closePath();
+      ctx.clip();
+      ctx.fillStyle = color;
+      ctx.fill();
+      this.parent.ctx.restore();
+    }
+    draw(face) {
+      if (!this.hidden) this.drawTriangle(face, face.color);
     }
   }
   KUR.BaseSprite = class extends Sprite {
@@ -278,12 +403,30 @@ var KUR = KUR || {};
       this.x_range = [-256, 512];
       this.base_speed = 5;
       this.xy_rate = 1.5;
-      this.draw_frame = [];
+      this.face_vec = [0, 0, 0];
       this.half_size = this.gridSize >> 1;
       this.dtx = null;
       this.dty = null;
       KUR.grid = this;
-      this.drawGrid();
+      this.zdepth = 15000;//真实深度的平方
+      this.object_group = [];
+      this.vertexs = [];
+      this.reDraw();
+      (() => {
+        this.vertexs.push(KUR.createVertex([1, 1, 0], [100, 200, 100, 300, 100, 200, 300, 200, 200]));
+        this.vertexs.push(KUR.createVertex([0, 1, 0], [100, 400, 100, 300, 300, 0, 300, 400, 200]));
+        let t = new KUR.group(this);
+        this.vertexs[0].root = t;
+        this.vertexs[1].root = t;
+        t.faces.push(this.vertexs[0]);
+        t.faces.push(this.vertexs[1]);
+        this.object_group.push(t);
+      })();//test
+    }
+    drawGlobal() {
+      for (let i = 0; i < this.vertexs.length; ++i)this.vertexs[i].depth = KUR.calculateSortDepth(this._position, this.vertexs[i].vertex);
+      this.vertexs.sort((a, b) => a.depth < b.depth);
+      for (let i = 0; i < this.vertexs.length; ++i)this.vertexs[i].root.draw(this.vertexs[i]);
     }
     //虽然叫做drawTexture,但是c2d没办法用matrix3d来变换纹理,所以只能用纯色,而且没有做视锥剔除,会有显示BUG
     drawTexture(color, args) {//args为3个连成线的点的坐标,绘制一个纯色平行四边形
@@ -421,8 +564,17 @@ var KUR = KUR || {};
       this.updateCharacters();
       this.update();
     }
+    updateVec3() {
+      let p = this._position;
+      let t = this._target;
+      this.face_vec[0] = t[0] - p[0];
+      this.face_vec[1] = t[1] - p[1];
+      this.face_vec[2] = t[2] - p[2];
+    }
     reDraw() {
+      this.updateVec3();
       this.drawGrid();
+      this.drawGlobal();
       this.updateCharacters();
       this.update();
     }
@@ -955,7 +1107,7 @@ var KUR = KUR || {};
   if (Imported.YEP_BattleEngineCore) {
     Sprite_Actor.prototype.stepForward = function () { };
   }
-  if (Imported.YEP_X_ActSeqPack2) {//插件兼容:copy & edit from YEP_X_ActSeqPack2
+  if (Imported.YEP_X_ActSeqPack2) {//插件兼容:copy and edit from YEP_X_ActSeqPack2.js
     Sprite_Battler.prototype.updateStateSprites = function () {
       if (this._stateIconSprite) {
         var height = this._battler.spriteHeight() * -1;
@@ -1037,9 +1189,7 @@ var KUR = KUR || {};
         if (angleToRotate > 0) KUR.grid.rotate(4);
         else KUR.grid.rotate(3);
         angleToRotate -= angularSpeedPerStep * (angleToRotate > 0 ? -1 : 1);
-        if (Math.abs(angleToRotate) < angularSpeedPerStep) {
-          break;
-        }
+        if (Math.abs(angleToRotate) < angularSpeedPerStep) break;
       }
       //----------------------------------------------------------------
       KUR.grid.base_speed = tbs << 2;
